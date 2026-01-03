@@ -3,10 +3,16 @@ Phase I - In-Memory Console Todo App
 Main application entry point
 """
 
-from services.storage import TaskStorage
-from services.operations import TaskOperations
-from cli.menu import MainMenu
-from cli.render import ConsoleRenderer
+import sys
+import os
+
+# Add project root to Python path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from todo_console.services.storage import TaskStorage
+from todo_console.services.operations import TaskOperations
+from todo_console.cli.menu import MainMenu
+from todo_console.cli.render import ConsoleRenderer
 
 
 def main():
@@ -46,12 +52,8 @@ def main():
                 renderer.display_error("Invalid task ID")
                 continue
 
-            # Prompt for new title/description
-            print("\n1. Update Title")
-            print("2. Update Description")
-            print("3. Cancel")
-            print()
-
+            # Display subtask menu and get choice
+            menu.display_subtask_menu(task_id)
             sub_choice = menu.get_subtask_choice()
 
             if sub_choice == 3:  # Cancel

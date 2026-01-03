@@ -2,8 +2,8 @@
 Contract: specs/001-phase1-console-app/contracts/operations.py
 """
 
-from typing import Dict, List
-from .storage import TaskStorage
+from services.storage import TaskStorage
+from cli.input import InputValidator
 
 
 class TaskOperations:
@@ -17,6 +17,7 @@ class TaskOperations:
             storage: Instance of TaskStorage service
         """
         self.storage = storage
+        self.validator = InputValidator()
 
     def create_task(self, title: str, description: str = None) -> dict:
         """

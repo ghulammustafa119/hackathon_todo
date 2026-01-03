@@ -3,7 +3,7 @@ Contract: specs/001-phase1-console-app/contracts/storage.py
 """
 
 from typing import Dict, List, Optional
-from ..models.task import Task
+from models.task import Task
 
 
 class TaskStorage:
