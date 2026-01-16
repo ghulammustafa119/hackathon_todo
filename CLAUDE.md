@@ -208,3 +208,10 @@ Wait for consent; never auto-create ADRs. Group related decisions (stacks, authe
 
 ## Code Standards
 See `.specify/memory/constitution.md` for code quality, testing, performance, security, and architecture principles.
+
+## Active Technologies
+- Python 3.11+ (backend), JavaScript/TypeScript (frontend with Next.js) + FastAPI (backend web framework), Next.js (frontend framework), SQLModel (ORM), uvicorn (ASGI server), pydantic (validation), passlib (password hashing), python-jose (JWT tokens), bcrypt (password hashing) (002-full-stack-web-app)
+- Neon PostgreSQL (managed PostgreSQL database) (002-full-stack-web-app)
+
+## Recent Changes
+- 002-full-stack-web-app: Added Python 3.11+ (backend), JavaScript/TypeScript (frontend with Next.js) + FastAPI (backend web framework), Next.js (frontend framework), SQLModel (ORM), uvicorn (ASGI server), pydantic (validation), passlib (password hashing), python-jose (JWT tokens), bcrypt (password hashing)
