@@ -11,7 +11,7 @@ This project implements a Todo List Manager that evolves through 5 phases, from 
 | Phase | Description | Status |
 |-------|-------------|--------|
 | I | In-Memory Console Application | ✅ Complete |
-| II | Web Application with File Persistence | Planned |
+| II | Full-Stack Web Application with Authentication | ✅ Complete |
 | III | AI Chatbot Integration | Planned |
 | IV | Kubernetes Deployment | Planned |
 | V | Cloud-Native with Event-Driven Architecture | Planned |

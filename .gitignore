@@ -1,0 +1,105 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env*
+.env.local
+.env.*.local
+*.log
+*.log.*
+
+# Next.js
+.next/
+out/
+build/
+dist/
+.nft.json
+.next/cache/
+
+# Python
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git/modules/
+.DS_Store
+
+# FastAPI/SQLModel
+*.db
+*.db-journal
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Icon?
+iTunesDB
+desktop.ini
+
+# Testing
+coverage/
+.coverage*
+*.coverage
+htmlcov/
+.pytest_cache/
+.hypothesis/
+
+# Distribution
+dist/
+build/
+*.egg
+*.egg-info/
+MANIFEST*
+
+# Logs
+logs/
+*.log
+
+# Runtime
+runtime/
+*.pid
+*.seed
+*.pkl
+
+# Local configuration
+*.local
+config/
+
+# Browser extensions
+*.tmp
+*.temp
+.env
