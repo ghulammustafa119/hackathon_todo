@@ -5,12 +5,21 @@ Script to add a test user to the database for authentication testing
 
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '.'))
+# Add the backend directory to the path so we can import from src
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'backend'))
 
 from sqlmodel import Session, select
 from src.database import engine
 from src.models.user import User
+from src.models.task import Task  # Import Task to register it for table creation
 from passlib.context import CryptContext
+
+# Import all models to ensure they're registered with SQLModel before creating tables
+from src import models  # This will import and register all models
+
+# Create all tables
+from sqlmodel import SQLModel
+SQLModel.metadata.create_all(engine)
 
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

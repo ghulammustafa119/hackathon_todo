@@ -6,6 +6,7 @@ import ProtectedRoute from '../components/auth/protected-route';
 import TaskForm from '../components/tasks/task-form';
 import TaskUpdateForm from '../components/tasks/task-update-form';
 import LogoutButton from '../components/auth/logout';
+import ChatInterface from '../components/chat/chat-interface';
 import apiService from '../lib/api';
 import authClient from '../lib/auth';
 
@@ -15,7 +16,41 @@ export default function DashboardPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [showTaskList, setShowTaskList] = useState(false);
+  const [showChat, setShowChat] = useState(false);
+  const [userInfo, setUserInfo] = useState({ userId: null, token: null });
   const router = useRouter();
+
+  // Load user info on component mount
+  useEffect(() => {
+    const loadUserInfo = async () => {
+      try {
+        const token = localStorage.getItem('auth_token');
+        if (token) {
+          // Get user info from API to get the user ID
+          const response = await fetch('http://localhost:8000/api/auth/user', {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+
+          if (response.ok) {
+            const userData = await response.json();
+            setUserInfo({ userId: userData.id, token });
+          } else {
+            // If token is invalid, clear it
+            localStorage.removeItem('auth_token');
+            setUserInfo({ userId: null, token: null });
+          }
+        }
+      } catch (error) {
+        console.error('Error loading user info:', error);
+        setUserInfo({ userId: null, token: null });
+      }
+    };
+
+    loadUserInfo();
+  }, []);
 
   useEffect(() => {
     fetchTasks(); // Fetch tasks on initial load to show the most recent task
@@ -35,6 +70,7 @@ export default function DashboardPage() {
       setLoading(false);
     }
   };
+
 
   const handleTaskCreated = (newTask) => {
     setTasks(prev => [...prev, newTask]);
@@ -101,6 +137,12 @@ export default function DashboardPage() {
           <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8 flex justify-between items-center">
             <h1 className="text-3xl font-bold text-gray-900">Todo Dashboard</h1>
             <div className="flex items-center space-x-4">
+              <button
+                onClick={() => setShowChat(!showChat)}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+              >
+                {showChat ? 'Hide Chat' : 'AI Chat Assistant'}
+              </button>
               <a
                 href="/signup"
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
@@ -114,6 +156,16 @@ export default function DashboardPage() {
         <main>
           <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
             <div className="px-4 py-6 sm:px-0">
+              {/* Chat Interface */}
+              {showChat && (
+                <div className="mb-6 bg-white p-4 rounded-lg shadow-md">
+                  <h2 className="text-xl font-semibold text-gray-800 mb-4">AI Task Assistant</h2>
+                  <div className="h-96">
+                    <ChatInterface userId={userInfo.userId} token={userInfo.token} />
+                  </div>
+                </div>
+              )}
+
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-semibold text-gray-800">Your Tasks</h2>
                 <div className="flex space-x-3">

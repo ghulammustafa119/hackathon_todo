@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.api.tasks import router as tasks_router
 from src.api.auth import router as auth_router
+from src.api.ai_chat import router as ai_chat_router
 
 app = FastAPI(title="Todo API", version="0.1.0")
 
@@ -17,6 +18,7 @@ app.add_middleware(
 # Include API routers
 app.include_router(tasks_router, prefix="/api/tasks", tags=["tasks"])
 app.include_router(auth_router, prefix="/api", tags=["auth"])
+app.include_router(ai_chat_router, prefix="", tags=["ai_chat"])
 
 @app.get("/")
 def read_root():

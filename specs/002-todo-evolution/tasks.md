@@ -42,8 +42,8 @@ Goal: Establish database connection, models, and authentication foundation
 - [X] T007 Set up SQLModel database connection and session management in backend/src/database/
 - [X] T008 [P] Create Task model in backend/src/models/task.py with user relationship
 - [X] T009 Create JWT token verification utilities in backend/src/api/deps.py
-- [X] T010 Set up Better Auth integration in frontend/src/lib/auth.js
-- [X] T011 [P] Create API service utilities in frontend/src/lib/api.js for authenticated requests
+- [X] T010 Set up Better Auth integration in frontend/src/components/AuthProvider.tsx
+- [X] T011 [P] Create API service utilities in frontend/src/services/api.ts for authenticated requests
 - [X] T012 Configure Neon PostgreSQL connection in backend
 
 ## Phase 3: [US1] User Authentication
@@ -52,10 +52,10 @@ Goal: Enable users to authenticate with the application to access personal tasks
 
 Independent Test: User can navigate to login page, enter credentials, and successfully authenticate
 
-- [X] T013 Create login page component in frontend/src/pages/login/page.js
-- [X] T014 Create logout functionality in frontend/src/components/auth/logout.js
-- [X] T015 Implement protected routes in frontend/src/components/auth/protected-route.js
-- [X] T016 Create auth service for token management in frontend/src/lib/auth-service.js
+- [X] T013 Create login page component in frontend/src/pages/login.tsx
+- [X] T014 Create logout functionality in frontend/src/components/auth/Logout.tsx
+- [X] T015 Implement protected routes in frontend/src/components/auth/ProtectedRoute.tsx
+- [X] T016 Create auth service for token management in frontend/src/services/auth.ts
 - [X] T017 Implement JWT verification middleware in backend/src/api/deps.py
 - [X] T018 Test authentication flow with end-to-end test
 
@@ -67,9 +67,9 @@ Independent Test: Authenticated user can create a task that remains available af
 
 - [X] T019 Create Task creation API endpoint POST /api/tasks in backend/src/api/tasks.py
 - [X] T020 [P] Create TaskService in backend/src/services/task_service.py with create method
-- [X] T021 Create task creation form component in frontend/src/components/tasks/task-form.js
-- [X] T022 Implement task creation functionality in frontend/src/lib/api.js
-- [X] T023 Add task creation UI to dashboard in frontend/src/pages/dashboard/page.js
+- [X] T021 Create task creation form component in frontend/src/components/tasks/TaskForm.tsx
+- [X] T022 Implement task creation functionality in frontend/src/services/api.ts
+- [X] T023 Add task creation UI to dashboard in frontend/src/pages/dashboard.tsx
 - [X] T024 Test task creation with authentication and persistence
 
 ## Phase 5: [US3] View User Tasks
@@ -80,9 +80,9 @@ Independent Test: Authenticated user can see a list of only their own tasks
 
 - [X] T025 Create Task listing API endpoint GET /api/tasks in backend/src/api/tasks.py
 - [X] T026 [P] Enhance TaskService with list method for user-scoped tasks
-- [X] T027 Create task list component in frontend/src/components/tasks/task-list.js
-- [X] T028 Implement task listing functionality in frontend/src/lib/api.js
-- [X] T029 Display task list in dashboard page in frontend/src/pages/dashboard/page.js
+- [X] T027 Create task list component in frontend/src/components/tasks/TaskList.tsx
+- [X] T028 Implement task listing functionality in frontend/src/services/api.ts
+- [X] T029 Display task list in dashboard page in frontend/src/pages/dashboard.tsx
 - [X] T030 Test task listing with user isolation
 
 ## Phase 6: [US4] Update Task Details
@@ -93,9 +93,9 @@ Independent Test: Authenticated user can update a task's title or description
 
 - [X] T031 Create Task update API endpoint PUT /api/tasks/{id} in backend/src/api/tasks.py
 - [X] T032 [P] Enhance TaskService with update method for user-scoped tasks
-- [X] T033 Create task update form component in frontend/src/components/tasks/task-update-form.js
-- [X] T034 Implement task update functionality in frontend/src/lib/api.js
-- [X] T035 Add update UI to task list items in frontend/src/components/tasks/task-list.js
+- [X] T033 Create task update form component in frontend/src/components/tasks/TaskUpdateForm.tsx
+- [X] T034 Implement task update functionality in frontend/src/services/api.ts
+- [X] T035 Add update UI to task list items in frontend/src/components/tasks/TaskList.tsx
 - [X] T036 Test task update with user isolation
 
 ## Phase 7: [US5] Delete User Tasks
@@ -106,9 +106,9 @@ Independent Test: Authenticated user can delete one of their tasks which no long
 
 - [X] T037 Create Task delete API endpoint DELETE /api/tasks/{id} in backend/src/api/tasks.py
 - [X] T038 [P] Enhance TaskService with delete method for user-scoped tasks
-- [X] T039 Create task delete confirmation component in frontend/src/components/tasks/task-delete.js
-- [X] T040 Implement task delete functionality in frontend/src/lib/api.js
-- [X] T041 Add delete UI to task list items in frontend/src/components/tasks/task-list.js
+- [X] T039 Create task delete confirmation component in frontend/src/components/tasks/TaskDelete.tsx
+- [X] T040 Implement task delete functionality in frontend/src/services/api.ts
+- [X] T041 Add delete UI to task list items in frontend/src/components/tasks/TaskList.tsx
 - [X] T042 Test task deletion with user isolation
 
 ## Phase 8: [US6] Mark Tasks Complete
@@ -119,9 +119,9 @@ Independent Test: Authenticated user can mark a task as complete/incomplete and 
 
 - [X] T043 Create Task completion API endpoint PATCH /api/tasks/{id}/complete in backend/src/api/tasks.py
 - [X] T044 [P] Enhance TaskService with completion toggle method for user-scoped tasks
-- [X] T045 Create task completion toggle component in frontend/src/components/tasks/task-complete.js
-- [X] T046 Implement task completion functionality in frontend/src/lib/api.js
-- [X] T047 Add completion UI to task list items in frontend/src/components/tasks/task-list.js
+- [X] T045 Create task completion toggle component in frontend/src/components/tasks/TaskComplete.tsx
+- [X] T046 Implement task completion functionality in frontend/src/services/api.ts
+- [X] T047 Add completion UI to task list items in frontend/src/components/tasks/TaskList.tsx
 - [X] T048 Test task completion with user isolation
 
 ## Phase 9: [US7] User Data Isolation
@@ -163,6 +163,13 @@ Goal: Complete integration, testing, and final polish
 - [X] T067 Verify stateless architecture by confirming no server-side session storage is used
 - [X] T068 Test application restart resilience by verifying data persistence remains intact
 - [X] T069 Confirm JWT-based authentication works without server-side session state
-- [ ] T070 Test authentication operation response times (should be < 2 seconds)
-- [ ] T071 Test task management operations response times (should be < 1 second)
-- [ ] T072 Verify system performance under load with multiple concurrent users
+- [ ] T070 Test authentication operation response times (should be < 2 seconds) - linked to SC-010 (acceptable response times) and SC-004 (uptime/availability)
+- [ ] T071 Test task management operations response times (should be < 1 second) - linked to SC-010 (acceptable response times) and SC-007 (performance degradation)
+- [ ] T072 Verify system performance under load with multiple concurrent users - linked to SC-004 (uptime during business hours) and SC-007 (handle task collections)
+
+## Stateless Architecture Validation (Phase III)
+
+- All AI chat requests are processed independently
+- No session state, memory, or conversation history is stored
+- Authentication is validated per-request using JWT
+- Any stateful enhancements are deferred to Phase V

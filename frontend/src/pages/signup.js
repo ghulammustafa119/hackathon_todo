@@ -9,7 +9,7 @@ export default function SignupPage() {
   const [userData, setUserData] = useState({
     email: '',
     password: '',
-    username: ''
+    name: ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -28,10 +28,34 @@ export default function SignupPage() {
         alert('Registration successful! Please log in with your credentials.');
         router.push('/login');
       } else {
-        setError(result.error || 'Registration failed');
+        // Handle the error - could be string or object
+        if (typeof result.error === 'string') {
+          setError(result.error);
+        } else if (result.error && Array.isArray(result.error)) {
+          // Handle validation errors array from backend (Pydantic)
+          const errorMessage = result.error.map(err =>
+            err.msg ? `${err.loc ? err.loc.join('.') : 'Error'}: ${err.msg}` :
+            err.detail || JSON.stringify(err)
+          ).join(', ');
+          setError(errorMessage);
+        } else if (result.error && typeof result.error === 'object') {
+          // Handle generic object error
+          setError(result.error.detail || result.error.message || JSON.stringify(result.error));
+        } else {
+          setError('Registration failed');
+        }
       }
     } catch (err) {
-      setError(err.message || 'An error occurred during registration');
+      // Handle network or other errors
+      if (err && typeof err.message === 'string') {
+        setError(err.message);
+      } else if (typeof err === 'string') {
+        setError(err);
+      } else if (err && err.detail) {
+        setError(err.detail);
+      } else {
+        setError('An error occurred during registration');
+      }
     } finally {
       setLoading(false);
     }
@@ -61,19 +85,19 @@ export default function SignupPage() {
           )}
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
-              <label htmlFor="username" className="sr-only">
-                Username
+              <label htmlFor="name" className="sr-only">
+                Full Name
               </label>
               <input
-                id="username"
-                name="username"
+                id="name"
+                name="name"
                 type="text"
-                autoComplete="username"
+                autoComplete="name"
                 required
-                value={userData.username}
+                value={userData.name}
                 onChange={handleChange}
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Username"
+                placeholder="Full Name"
               />
             </div>
             <div>

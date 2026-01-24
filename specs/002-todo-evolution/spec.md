@@ -109,12 +109,12 @@ The purpose of this feature is to evolve the existing in-memory console-based to
 - **SC-001**: Users can authenticate successfully and access the application with valid credentials
 - **SC-002**: Users can create, read, update, and delete tasks with 100% data persistence
 - **SC-003**: Users can only access their own tasks and cannot view other users' tasks
-- **SC-004**: The system maintains 99.9% uptime during business hours (06:00-24:00 UTC)
+- **SC-004**: The system maintains 99.9% uptime during business hours (weekdays 09:00-17:00 local time, UTC-0) measured by API availability and response success rate
 - **SC-005**: The web interface is responsive and accessible on desktop, tablet, and mobile devices
 - **SC-006**: All functionality from Phase I is preserved and enhanced with persistence and authentication
 - **SC-007**: Users can handle task collections without performance degradation
 - **SC-008**: The system correctly validates JWT tokens and returns 401 Unauthorized for invalid requests
-- **SC-009**: The web interface achieves 90% positive rating in usability tests based on standardized questionnaire
+- **SC-009**: The web interface achieves 90% positive rating in usability tests based on standardized System Usability Scale (SUS) questionnaire with minimum 5 participant sample
 - **SC-010**: Authentication and task management operations complete within acceptable response times
 
 ## 9. Constitution Compliance
@@ -129,7 +129,14 @@ The purpose of this feature is to evolve the existing in-memory console-based to
 - The scope is clearly defined with explicit in/out boundaries
 - Authentication and user isolation requirements are properly specified
 
-## 10. Next Steps
+## 10. Phase III – Stateless AI Chatbot Acknowledgment
+
+The system architecture supports Phase III evolution to include stateless AI chatbot capabilities with the following characteristics:
+- Phase III operates in strict stateless mode with no server-side session storage
+- Authentication is validated per-request using JWT tokens for all AI interactions
+- All stateful behavior is deferred to Phase V for advanced event-driven architecture
+
+## 11. Next Steps
 
 - Proceed to architectural planning phase to design the system components with authentication
 - Create detailed technical specifications for frontend and backend components including JWT handling
