@@ -1,4 +1,4 @@
-"""Base class for MCP tools with authentication validation."""
+"""Base class for MCP tools with user ID authentication (no JWT validation)."""
 
 import json
 import logging
@@ -8,7 +8,6 @@ from datetime import datetime
 from sqlmodel import Session
 from pydantic import BaseModel
 from fastapi import HTTPException, status
-from jose import JWTError, jwt
 
 from ..config import config
 from ..utils.validation import validate_user_ownership
@@ -29,47 +28,8 @@ class BaseMCPTaskTool(ABC):
     """Base class for all MCP task tools."""
 
     def __init__(self):
-        self.jwt_secret_key = config.jwt_secret_key
-        self.jwt_algorithm = config.jwt_algorithm
-
-    def _validate_jwt(self, token: str) -> Optional[Dict[str, Any]]:
-        """
-        Validate JWT token and return payload.
-
-        Args:
-            token: JWT token to validate
-
-        Returns:
-            Token payload if valid, None if invalid
-        """
-        try:
-            payload = jwt.decode(token, self.jwt_secret_key, algorithms=[self.jwt_algorithm])
-
-            # Check if token is expired
-            exp = payload.get("exp")
-            if exp and datetime.utcfromtimestamp(exp) < datetime.utcnow():
-                logger.warning("Token has expired")
-                return None
-
-            return payload
-        except JWTError as e:
-            logger.error(f"JWT validation error: {str(e)}")
-            return None
-
-    def _extract_user_id_from_token(self, token: str) -> Optional[str]:
-        """
-        Extract user ID from JWT token.
-
-        Args:
-            token: JWT token to extract user ID from
-
-        Returns:
-            User ID if found, None if not found
-        """
-        payload = self._validate_jwt(token)
-        if payload:
-            return payload.get("sub")  # 'sub' typically holds the user ID in JWT
-        return None
+        # No JWT validation needed - authentication happens at API level
+        pass
 
     def _validate_user_ownership_with_session(
         self,
@@ -91,13 +51,14 @@ class BaseMCPTaskTool(ABC):
         return validate_user_ownership(session, task_id, user_id)
 
     @abstractmethod
-    def execute(self, params: Dict[str, Any], token: str) -> ToolResponse:
+    async def execute(self, params: Dict[str, Any], token: str, user_id: Optional[str]) -> ToolResponse:
         """
-        Execute the tool with the given parameters and token.
+        Execute the tool with the given parameters, token, and user ID.
 
         Args:
             params: Parameters for the tool execution
-            token: JWT token for authentication
+            token: JWT token for backend API calls (already validated at API level)
+            user_id: User ID for authentication (already validated at API level)
 
         Returns:
             ToolResponse with success/failure status and data/error

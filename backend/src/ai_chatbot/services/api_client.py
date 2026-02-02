@@ -37,7 +37,9 @@ class PhaseIIBackendClient:
         # Ensure Authorization header is properly formatted
         if headers is None:
             headers = {}
-        elif 'Authorization' in headers and not headers['Authorization'].startswith('Bearer '):
+
+        # If Authorization header exists but doesn't start with "Bearer ", add it
+        if 'Authorization' in headers and not headers['Authorization'].startswith('Bearer '):
             headers['Authorization'] = f"Bearer {headers['Authorization']}"
 
         async with httpx.AsyncClient(timeout=self.timeout) as client:
@@ -110,7 +112,7 @@ class PhaseIIBackendClient:
         Returns:
             Task data as dictionary
         """
-        headers = {"Authorization": token}
+        headers = {"Authorization": f"Bearer {token}"}
         return await self._make_request(
             method="GET",
             endpoint=f"/api/tasks/{task_id}",
@@ -136,7 +138,7 @@ class PhaseIIBackendClient:
         Returns:
             Created task data as dictionary
         """
-        headers = {"Authorization": token}
+        headers = {"Authorization": f"Bearer {token}"}
         json_data = {
             "title": title,
             "description": description,
@@ -154,7 +156,7 @@ class PhaseIIBackendClient:
         self,
         task_id: str,
         title: Optional[str] = None,
-        description: Optional in [str] = None,
+        description: Optional[str] = None,
         due_date: Optional[str] = None,
         completed: Optional[bool] = None,
         token: str = ""
@@ -173,7 +175,7 @@ class PhaseIIBackendClient:
         Returns:
             Updated task data as dictionary
         """
-        headers = {"Authorization": token}
+        headers = {"Authorization": f"Bearer {token}"}
         json_data = {}
         if title is not None:
             json_data["title"] = title
@@ -202,7 +204,7 @@ class PhaseIIBackendClient:
         Returns:
             Response data as dictionary
         """
-        headers = {"Authorization": token}
+        headers = {"Authorization": f"Bearer {token}"}
         return await self._make_request(
             method="DELETE",
             endpoint=f"/api/tasks/{task_id}",
@@ -231,7 +233,7 @@ class PhaseIIBackendClient:
         Returns:
             List of tasks as dictionary
         """
-        headers = {"Authorization": token}
+        headers = {"Authorization": f"Bearer {token}"}
 
         # DISABLED (Phase III): Filtering is disabled to comply with the Stateless System Rule. Deferred to Phase V.
         # Build query parameters - but ignore them in Phase III
@@ -262,7 +264,7 @@ class PhaseIIBackendClient:
         Returns:
             Updated task data as dictionary
         """
-        headers = {"Authorization": token}
+        headers = {"Authorization": f"Bearer {token}"}
         json_data = {"completed": completed}
 
         return await self._make_request(

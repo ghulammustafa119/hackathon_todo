@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global SVG reset to ensure consistent sizing in flex containers */
+svg {
+  display: inline-block;
+  vertical-align: middle;
+  shape-rendering: inherit;
+  text-rendering: inherit;
+}
+
+/* Ensure SVGs respect Tailwind sizing utilities in flex containers */
+svg:not([width]):not([height]) {
+  flex-shrink: 0;
+}

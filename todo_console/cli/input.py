@@ -3,6 +3,9 @@ Contract: specs/001-phase1-console-app/contracts/input.py
 """
 
 
+from typing import Callable, Any
+
+
 class InputValidator:
     """Validates user input for menu choices, task IDs, and task fields"""
 
@@ -62,7 +65,7 @@ class InputValidator:
         """
         return True
 
-    def get_validated_input(self, prompt: str, validator: callable) -> any:
+    def get_validated_input(self, prompt: str, validator: Callable[[str], Any]) -> Any:
         """
         Generic method to collect and validate user input with retries
 

@@ -2,6 +2,8 @@
 Contract: specs/001-phase1-console-app/contracts/operations.py
 """
 
+from typing import Optional
+
 from services.storage import TaskStorage
 from cli.input import InputValidator
 
@@ -19,7 +21,7 @@ class TaskOperations:
         self.storage = storage
         self.validator = InputValidator()
 
-    def create_task(self, title: str, description: str = None) -> dict:
+    def create_task(self, title: str, description: Optional[str] = None) -> dict:
         """
         Create a new task with validation and ID assignment
 
@@ -46,7 +48,7 @@ class TaskOperations:
         except ValueError as e:
             return {"success": False, "error": str(e)}
 
-    def update_task(self, task_id: int, title: str = None, description: str = None) -> dict:
+    def update_task(self, task_id: int, title: Optional[str] = None, description: Optional[str] = None) -> dict:
         """
         Update an existing task's title and/or description
 
@@ -122,6 +124,8 @@ class TaskOperations:
 
         # Get current task
         task = self.storage.get(task_id)
+        if task is None:
+            return {"success": False, "error": "Task not found"}
         old_status = task.completed
 
         # Toggle completion

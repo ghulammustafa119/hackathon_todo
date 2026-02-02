@@ -1,0 +1,5 @@
+{
+    "settings": {
+        "python.pythonPath": "./backend/venv/bin/python"
+    }
+}

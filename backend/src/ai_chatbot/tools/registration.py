@@ -1,7 +1,7 @@
 """MCP tool registration manager."""
 
-from typing import Dict, Type, Callable, Any
-from .base_tool import BaseMCPTaskTool
+from typing import Dict, Type, Callable, Any, Optional
+from .base_tool import BaseMCPTaskTool, ToolResponse
 from ..utils.logging import agent_logger
 
 
@@ -71,24 +71,35 @@ class MCPToolRegistry:
             raise KeyError(f"MCP tool function '{name}' not registered")
         return self._tool_functions[name]
 
-    def execute_tool(self, name: str, params: Dict[str, Any], token: str) -> Any:
+    async def execute_tool(self, name: str, params: Dict[str, Any], token: str, user_id: Optional[str] = None) -> Any:
         """
-        Execute a registered tool with the given parameters and token.
+        Execute a registered tool with the given parameters, token, and user ID.
 
         Args:
             name: Name of the tool to execute
             params: Parameters for the tool execution
-            token: JWT token for authentication
+            token: JWT token for backend API calls (validated at API level)
+            user_id: User ID for authentication (validated at API level)
 
         Returns:
             Tool execution result
         """
+        # Handle the case where user_id is None by providing an empty string
+        # since individual tools expect a non-optional string
+        effective_user_id = user_id if user_id is not None else ""
+
         if name in self._tools:
             tool = self._tools[name]
-            return tool.execute(params, token)
+            # Since the tool.execute is async, we need to await it
+            result = await tool.execute(params, token, effective_user_id)
+            return result
         elif name in self._tool_functions:
             func = self._tool_functions[name]
-            return func(params, token)
+            result = func(params, token, effective_user_id)
+            # If the result is a coroutine (async function), await it
+            if hasattr(result, '__await__'):
+                return await result
+            return result
         else:
             raise KeyError(f"MCP tool '{name}' not found")
 
