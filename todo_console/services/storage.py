@@ -14,7 +14,7 @@ class TaskStorage:
         self.tasks: Dict[int, Task] = {}
         self.next_id: int = 1
 
-    def create(self, title: str, description: str = None) -> int:
+    def create(self, title: str, description: Optional[str] = None) -> int:
         """
         Create a new task with specified title and optional description
 

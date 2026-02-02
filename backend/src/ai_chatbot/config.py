@@ -5,13 +5,13 @@ from pydantic_settings import BaseSettings
 class AgentConfig(BaseSettings):
     """Configuration for the AI Agent and MCP Tools"""
 
-    # OpenAI Configuration
-    openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
-    openai_model: str = os.getenv("OPENAI_MODEL", "gpt-4-turbo-preview")
+    # Cohere Configuration
+    cohere_api_key: str = os.getenv("COHERE_API_KEY", "")
+    cohere_model: str = os.getenv("COHERE_MODEL", "command-nightly")
 
     # JWT Configuration
-    jwt_secret_key: str = os.getenv("JWT_SECRET_KEY", "dev-secret-key-change-in-production")
-    jwt_algorithm: str = os.getenv("JWT_ALGORITHM", "HS256")
+    jwt_secret_key: str = os.getenv("JWT_SECRET_KEY", "your-default-secret-key")  # Same as auth.py
+    jwt_algorithm: str = os.getenv("JWT_ALGORITHM", "HS256")  # Same as auth.py
     jwt_access_token_expire_minutes: int = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 
     # Backend API Configuration
@@ -40,6 +40,7 @@ class AgentConfig(BaseSettings):
 
     class Config:
         env_file = ".env"
+        extra = "ignore"  # Ignore extra environment variables not defined in the model
 
 # Global configuration instance
 config = AgentConfig()

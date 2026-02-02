@@ -4,9 +4,10 @@ Database initialization script
 """
 
 from sqlmodel import SQLModel
-from src.database import engine
+from src.database.session import engine
 from src.models.user import User
 from src.models.task import Task
+from src.models.conversation import ConversationMessage, ConversationHistory
 
 def create_tables():
     """Create all database tables"""

@@ -1,6 +1,6 @@
 """MCP tool for completing tasks."""
 
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from sqlmodel import Session
 from pydantic import BaseModel
 from ..services.api_client import backend_client
@@ -21,13 +21,14 @@ class CompleteTaskTool(BaseMCPTaskTool):
     def __init__(self):
         super().__init__()
 
-    async def execute(self, params: Dict[str, Any], token: str) -> ToolResponse:
+    async def execute(self, params: Dict[str, Any], token: str, user_id: Optional[str]) -> ToolResponse:
         """
         Execute the complete_task tool.
 
         Args:
             params: Parameters for task completion
-            token: JWT token for authentication
+            token: JWT token for backend API calls (already validated at API level)
+            user_id: User ID for authentication (already validated at API level)
 
         Returns:
             ToolResponse with updated task data or error
@@ -36,7 +37,15 @@ class CompleteTaskTool(BaseMCPTaskTool):
 
         try:
             # Extract parameters
-            task_id = params.get("task_id", "").strip()
+            task_id = params.get("task_id", "")
+
+            # Convert to string if it's not already a string (e.g., if AI sends it as int)
+            if task_id is None:
+                task_id = ""
+            elif not isinstance(task_id, str):
+                task_id = str(task_id)
+
+            task_id = task_id.strip()
             completed = params.get("completed")
 
             # Validate required parameters
@@ -58,27 +67,20 @@ class CompleteTaskTool(BaseMCPTaskTool):
                     "Task completion status must be a boolean value"
                 )
 
-            # Extract user ID from token
-            user_id = self._extract_user_id_from_token(token)
-            if not user_id:
-                return self._handle_error(
-                    "AUTHENTICATION_FAILED",
-                    "Invalid or expired authentication token"
-                )
-
             # Update task completion status via backend client
             try:
                 updated_task = await backend_client.toggle_task_completion(
                     task_id=task_id,
                     completed=completed,
-                    token=token
+                    token=token  # Use the token passed from the API layer
                 )
 
                 # Log successful tool execution
                 duration = (__import__('time').time() - start_time) * 1000
+                safe_user_id = user_id if user_id is not None else "unknown"
                 log_tool_execution(
                     tool_name="complete_task",
-                    user_id=user_id,
+                    user_id=safe_user_id,
                     success=True,
                     input_params={"task_id": task_id, "completed": completed},
                     output_result=updated_task
@@ -91,9 +93,10 @@ class CompleteTaskTool(BaseMCPTaskTool):
             except Exception as e:
                 # Log failed tool execution
                 duration = (__import__('time').time() - start_time) * 1000
+                safe_user_id = user_id if user_id is not None else "unknown"
                 log_tool_execution(
                     tool_name="complete_task",
-                    user_id=user_id,
+                    user_id=safe_user_id,
                     success=False,
                     input_params={"task_id": task_id, "completed": completed},
                     error_details=str(e)
@@ -105,15 +108,12 @@ class CompleteTaskTool(BaseMCPTaskTool):
                 )
 
         except Exception as e:
-            # Extract user ID from token for logging if possible
-            user_payload = self._validate_jwt(token)
-            user_id = user_payload.get("sub") if user_payload else "unknown"
-
-            # Log failed tool execution
+            # Log failed tool execution - user_id is already available from the method parameter
             duration = (__import__('time').time() - start_time) * 1000
+            safe_user_id = user_id if user_id is not None else "unknown"
             log_tool_execution(
                 tool_name="complete_task",
-                user_id=user_id,
+                user_id=safe_user_id,
                 success=False,
                 input_params=params,
                 error_details=str(e)

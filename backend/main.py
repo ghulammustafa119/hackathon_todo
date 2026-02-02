@@ -1,8 +1,13 @@
+import os
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.api.tasks import router as tasks_router
 from src.api.auth import router as auth_router
 from src.api.ai_chat import router as ai_chat_router
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = FastAPI(title="Todo API", version="0.1.0")
 

@@ -134,11 +134,11 @@ def detect_intent(text: str) -> str:
     text_lower = text.lower()
 
     # Define keywords for each intent
-    create_keywords = ['add', 'create', 'make', 'new', 'setup', 'establish', 'put in']
-    list_keywords = ['show', 'list', 'display', 'see', 'view', 'get', 'fetch', 'what']
+    create_keywords = ['add', 'create', 'make', 'new', 'setup', 'establish', 'put in', 'buy', 'get', 'for me', 'to do', 'need to', 'want to']
+    list_keywords = ['show', 'display', 'see', 'view', 'get', 'fetch', 'what', 'list', 'all', 'my']
     update_keywords = ['update', 'change', 'modify', 'edit', 'adjust', 'alter']
     delete_keywords = ['delete', 'remove', 'erase', 'cancel', 'get rid of', 'eliminate']
-    complete_keywords = ['complete', 'finish', 'done', 'mark', 'as done', 'accomplish']
+    complete_keywords = ['complete', 'finish', 'done', 'mark', 'as done', 'accomplish', 'check', 'tick']
 
     # Count keyword matches for each intent
     scores = {
@@ -148,6 +148,33 @@ def detect_intent(text: str) -> str:
         'delete_task': sum(1 for keyword in delete_keywords if keyword in text_lower),
         'complete_task': sum(1 for keyword in complete_keywords if keyword in text_lower)
     }
+
+    # Special handling for common phrases that might indicate completion without specific task
+    # "mark task as done" or "mark a task as done" - if no specific task mentioned, should list tasks first
+    if ('mark' in text_lower or 'complete' in text_lower or 'done' in text_lower) and ('task' in text_lower):
+        # If there are no specific task identifiers (like a title), boost list_tasks to show available tasks
+        # Check if user mentioned a specific task title
+        has_specific_identifier = any(word in text_lower for word in ['named', 'called', 'titled', '"', "'"])
+        if not has_specific_identifier and scores['complete_task'] > 0 and scores['list_tasks'] < 2:
+            # If user wants to complete a task but hasn't specified which one, they probably want to see their tasks first
+            scores['list_tasks'] = max(scores['list_tasks'], scores['complete_task'])
+
+    # Special handling for "for me" or "need to" which often indicate creation
+    if 'for me' in text_lower or 'need to' in text_lower or 'want to' in text_lower:
+        # Boost create_task score if these phrases are present
+        scores['create_task'] += 2
+
+    # Special handling for "list" keyword to avoid false positives
+    # If "list" appears but other action words are stronger indicators, prefer the action
+    if 'list' in text_lower and 'my' not in text_lower:
+        # Check if this is likely referring to a "shopping list" or similar rather than wanting to list tasks
+        # If delete/update/complete keywords are present, prioritize those
+        if scores['delete_task'] > 0 or scores['update_task'] > 0 or scores['complete_task'] > 0:
+            # Create a copy of scores without 'list_tasks' to prioritize action in phrases like "delete my shopping list"
+            action_scores = {k: v for k, v in scores.items() if k != 'list_tasks'}
+            if action_scores:  # Check if there are other scores
+                max_intent = max(action_scores, key=action_scores.get)
+                return max_intent if action_scores[max_intent] > 0 else 'list_tasks'
 
     # Return the intent with highest score, defaulting to list_tasks if no clear match
     max_intent = max(scores, key=scores.get)

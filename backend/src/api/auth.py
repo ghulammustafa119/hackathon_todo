@@ -80,6 +80,11 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
+class LoginResponse(BaseModel):
+    token: str  # For frontend compatibility
+    token_type: str
+    user: dict  # Will contain user info
+
 class TokenData(BaseModel):
     user_id: Optional[str] = None
 
@@ -162,7 +167,7 @@ def register_user(user_data: UserRegister, session: Session = Depends(get_sessio
         created_at=db_user.created_at
     )
 
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=LoginResponse)
 def login_user(user_credentials: UserLogin, session: Session = Depends(get_session)):
     # Find user by email with normalized email
     user = session.exec(select(User).where(User.email == user_credentials.email.lower())).first()
@@ -184,7 +189,14 @@ def login_user(user_credentials: UserLogin, session: Session = Depends(get_sessi
         data={"sub": user.id}, expires_delta=access_token_expires
     )
 
-    return {"access_token": access_token, "token_type": "bearer"}
+    return LoginResponse(
+        token=access_token,
+        token_type="bearer",
+        user={
+            "id": str(user.id),
+            "email": user.email
+        }
+    )
 
 @router.post("/logout")
 def logout_user():
@@ -205,7 +217,7 @@ def get_current_user_from_token(
 
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: str = payload.get("sub")
+        user_id: Optional[str] = payload.get("sub")
 
         # Verify token type
         token_type = payload.get("type")

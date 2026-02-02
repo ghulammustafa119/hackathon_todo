@@ -4,7 +4,7 @@ import asyncio
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from src.ai_chatbot.utils.nlp_utils import detect_intent, extract_task_parameters
-from src.ai_chatbot.agents.openai_agent import OpenAIChatbotAgent
+from src.ai_chatbot.agents.cohere_agent import CohereChatbotAgent
 from src.ai_chatbot.processors.input_processor import InputProcessor
 
 
@@ -62,10 +62,10 @@ def test_input_processor_initialization():
 
 @pytest.mark.asyncio
 async def test_agent_initialization():
-    """Test OpenAI agent initialization."""
-    with patch.dict('os.environ', {'OPENAI_API_KEY': 'test-key'}):
-        agent = OpenAIChatbotAgent()
-        assert agent.client is not None
+    """Test Cohere agent initialization."""
+    with patch.dict('os.environ', {'COHERE_API_KEY': 'test-key'}):
+        agent = CohereChatbotAgent()
+        assert agent.model == "command-r-plus"
         assert len(agent.tools) > 0  # Should have registered tools
         print("✓ Agent initialization test passed")
 
@@ -73,7 +73,7 @@ async def test_agent_initialization():
 def test_task_completion_requirement():
     """Test that all major components are implemented."""
     # Check that required modules exist
-    import src.ai_chatbot.agents.openai_agent
+    import src.ai_chatbot.agents.cohere_agent
     import src.ai_chatbot.tools.create_task_tool
     import src.ai_chatbot.tools.list_tasks_tool
     import src.ai_chatbot.tools.update_task_tool

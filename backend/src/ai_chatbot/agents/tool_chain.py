@@ -2,7 +2,6 @@
 
 from typing import List, Dict, Any, Optional
 from ..tools.registration import tool_registry
-from ..utils.response_formatter import format_error_response
 from ..utils.logging import agent_logger
 
 
@@ -48,8 +47,8 @@ class ToolChainExecutor:
                     "partial_results": results
                 }
 
-            function_name = tool_call.get("name", tool_call.get("function", {}).get("name"))
-            function_args = tool_call.get("arguments", tool_call.get("function", {}).get("arguments", {}))
+            function_name = (tool_call.get("name")) or ((tool_call.get("function") or {}).get("name"))
+            function_args = (tool_call.get("arguments")) or ((tool_call.get("function") or {}).get("arguments", {}))
 
             # If arguments is a string, parse it as JSON
             if isinstance(function_args, str):
@@ -73,7 +72,24 @@ class ToolChainExecutor:
             updated_args = self._update_args_with_context(function_args, context)
 
             try:
-                # Execute the tool
+                # Execute the tool - check that function_name is not None
+                if not function_name:
+                    error_msg = f"Function name is required but got: {function_name}"
+                    agent_logger.error(
+                        error_msg,
+                        context={"step": i, "function_name": function_name},
+                        user_id=user_id
+                    )
+                    result = {
+                        "tool": str(function_name) if function_name else "unknown",
+                        "input": updated_args,
+                        "output": None,
+                        "success": False,
+                        "error": error_msg
+                    }
+                    results.append(result)
+                    continue
+
                 tool_response = await tool_registry.execute_tool(function_name, updated_args, token)
 
                 # Store result
@@ -174,7 +190,7 @@ class ToolChainExecutor:
         elif function_name == "list_tasks" and tool_response.success:
             if hasattr(tool_response, 'data') and tool_response.data:
                 tasks = tool_response.data.get('tasks', [])
-                new_context['last_listed_tasks'] = [task.get('id') for task in tasks if task.get('id')]
+                new_context['last_listed_tasks'] = [task.get('id') for task in tasks if task is not None and isinstance(task, dict) and task.get('id')]
 
         elif function_name == "update_task" and tool_response.success:
             if hasattr(tool_response, 'data') and tool_response.data:
@@ -220,8 +236,8 @@ class ToolChainExecutor:
 
             # Execute the tool call in the step
             tool_call = step.get("tool_call", {})
-            function_name = tool_call.get("name", tool_call.get("function", {}).get("name"))
-            function_args = tool_call.get("arguments", tool_call.get("function", {}).get("arguments", {}))
+            function_name = (tool_call.get("name")) or ((tool_call.get("function") or {}).get("name"))
+            function_args = (tool_call.get("arguments")) or ((tool_call.get("function") or {}).get("arguments", {}))
 
             # If arguments is a string, parse it as JSON
             if isinstance(function_args, str):
@@ -240,7 +256,25 @@ class ToolChainExecutor:
             updated_args = self._update_args_with_context(function_args, context)
 
             try:
-                # Execute the tool
+                # Execute the tool - check that function_name is not None
+                if not function_name:
+                    error_msg = f"Function name is required but got: {function_name}"
+                    agent_logger.error(
+                        error_msg,
+                        context={"step": step, "function_name": function_name},
+                        user_id=user_id
+                    )
+                    result = {
+                        "tool": str(function_name) if function_name else "unknown",
+                        "input": updated_args,
+                        "output": None,
+                        "success": False,
+                        "error": error_msg,
+                        "condition_applied": bool(condition)
+                    }
+                    results.append(result)
+                    continue
+
                 tool_response = await tool_registry.execute_tool(function_name, updated_args, token)
 
                 # Store result
@@ -294,18 +328,20 @@ class ToolChainExecutor:
         condition_value = condition.get("value")
 
         if condition_type == "has_value_in_context":
-            key = condition_value.get("key")
-            return key in context and context[key] is not None
+            key = (condition_value or {}).get("key")
+            return key is not None and key in context and context[key] is not None
 
         elif condition_type == "context_equals":
-            key = condition_value.get("key")
-            expected = condition_value.get("expected")
-            return key in context and context[key] == expected
+            key = (condition_value or {}).get("key")
+            expected = (condition_value or {}).get("expected")
+            return (key is not None and expected is not None and
+                   key in context and context[key] == expected)
 
         elif condition_type == "context_contains":
-            key = condition_value.get("key")
-            expected = condition_value.get("expected")
-            if key in context and isinstance(context[key], list):
+            key = (condition_value or {}).get("key")
+            expected = (condition_value or {}).get("expected")
+            if (key is not None and expected is not None and
+                key in context and isinstance(context[key], list)):
                 return expected in context[key]
             return False
 

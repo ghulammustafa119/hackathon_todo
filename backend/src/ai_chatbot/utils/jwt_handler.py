@@ -27,10 +27,12 @@ def create_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None
         minutes = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
         expire = datetime.utcnow() + timedelta(minutes=minutes)
 
-    to_encode.update({"exp": expire})
-    secret_key = os.getenv("JWT_SECRET_KEY", "dev-secret-key-change-in-production")
-    algorithm = os.getenv("JWT_ALGORITHM", "HS256")
-    encoded_jwt = jwt.encode(to_encode, secret_key, algorithm=algorithm)
+    to_encode.update({"exp": expire, "type": "access"})  # Add token type to match auth.py
+
+    # Use the exact same loading approach as auth.py for consistency
+    SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-default-secret-key")
+    ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
 
@@ -46,9 +48,10 @@ def decode_token(token: str) -> Optional[Dict[str, Any]]:
         Token payload if valid, None if invalid
     """
     try:
-        secret_key = os.getenv("JWT_SECRET_KEY", "dev-secret-key-change-in-production")
-        algorithm = os.getenv("JWT_ALGORITHM", "HS256")
-        payload = jwt.decode(token, secret_key, algorithms=[algorithm])
+        # Use the exact same loading approach as auth.py for consistency
+        SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-default-secret-key")
+        ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload
     except JWTError:
         return None
@@ -95,34 +98,23 @@ def validate_and_extract_user_context(token: str) -> Optional[Dict[str, Any]]:
     Returns:
         Dictionary with user context (user_id, etc.) if valid, None if invalid
     """
-    # Debug: Print to understand what's happening
-    print(f"DEBUG: validate_and_extract_user_context called with token length: {len(token) if token else 0}")
-
     # Use the exact same loading approach as auth.py
     SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-default-secret-key")  # Same as auth.py
     ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")  # Same as auth.py
 
-    print(f"DEBUG: Using auth.py style secret key length: {len(SECRET_KEY) if SECRET_KEY else 0}")
-    print(f"DEBUG: Using auth.py style algorithm: {ALGORITHM}")
-
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        print(f"DEBUG: JWT decode successful with auth.py style, payload keys: {list(payload.keys()) if payload else 'None'}")
 
         # Extract user_id first (as in auth.py)
         user_id = payload.get("sub")
-        print(f"DEBUG: Extracted user_id: {user_id}")
 
         # Verify token type (same as auth.py)
         token_type = payload.get("type")
-        print(f"DEBUG: Token type: {token_type}")
 
         if token_type != "access":
-            print(f"DEBUG: Token type mismatch. Expected 'access', got '{token_type}'")
             return None
 
         if user_id is None:
-            print(f"DEBUG: No user_id found in payload")
             return None
 
         # Extract user context information
@@ -136,10 +128,8 @@ def validate_and_extract_user_context(token: str) -> Optional[Dict[str, Any]]:
             "type": payload.get("type")
         }
 
-        print(f"DEBUG: Successfully validated token for user {user_id}")
         return user_context
-    except JWTError as e:
-        print(f"DEBUG: JWT validation error with auth.py style: {str(e)}")
+    except JWTError:
         return None
 
 

@@ -1,6 +1,6 @@
 """MCP tool for creating tasks."""
 
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from sqlmodel import Session
 from pydantic import BaseModel
 from ..services.api_client import backend_client
@@ -28,13 +28,14 @@ class CreateTaskTool(BaseMCPTaskTool):
     def __init__(self):
         super().__init__()
 
-    async def execute(self, params: Dict[str, Any], token: str) -> ToolResponse:
+    async def execute(self, params: Dict[str, Any], token: str, user_id: Optional[str]) -> ToolResponse:
         """
         Execute the create_task tool.
 
         Args:
             params: Parameters for task creation
-            token: JWT token for authentication
+            token: JWT token for backend API calls (already validated at API level)
+            user_id: User ID for authentication (already validated at API level)
 
         Returns:
             ToolResponse with created task data or error
@@ -66,28 +67,22 @@ class CreateTaskTool(BaseMCPTaskTool):
                     "Due date format is invalid. Use ISO 8601 format (YYYY-MM-DD)"
                 )
 
-            # Extract user ID from token
-            user_id = self._extract_user_id_from_token(token)
-            if not user_id:
-                return self._handle_error(
-                    "AUTHENTICATION_FAILED",
-                    "Invalid or expired authentication token"
-                )
-
-            # Create task via backend client
+            # Create task via backend client - pass user_id for logging purposes
             try:
+                # Use the token for actual API calls since authentication still happens at HTTP level
                 created_task = await backend_client.create_task(
                     title=title,
                     description=description if description else None,
                     due_date=due_date if due_date else None,
-                    token=token
+                    token=token  # Use the token passed from the API layer
                 )
 
                 # Log successful tool execution
                 duration = (__import__('time').time() - start_time) * 1000
+                safe_user_id = user_id if user_id is not None else "unknown"
                 log_tool_execution(
                     tool_name="create_task",
-                    user_id=user_id,
+                    user_id=safe_user_id,
                     success=True,
                     input_params={"title": title, "description": description, "due_date": due_date},
                     output_result=created_task
@@ -100,9 +95,10 @@ class CreateTaskTool(BaseMCPTaskTool):
             except Exception as e:
                 # Log failed tool execution
                 duration = (__import__('time').time() - start_time) * 1000
+                safe_user_id = user_id if user_id is not None else "unknown"
                 log_tool_execution(
                     tool_name="create_task",
-                    user_id=user_id,
+                    user_id=safe_user_id,
                     success=False,
                     input_params={"title": title, "description": description, "due_date": due_date},
                     error_details=str(e)
@@ -114,15 +110,12 @@ class CreateTaskTool(BaseMCPTaskTool):
                 )
 
         except Exception as e:
-            # Extract user ID from token for logging if possible
-            user_payload = self._validate_jwt(token)
-            user_id = user_payload.get("sub") if user_payload else "unknown"
-
-            # Log failed tool execution
+            # Log failed tool execution - user_id is already available from the method parameter
             duration = (__import__('time').time() - start_time) * 1000
+            safe_user_id = user_id if user_id is not None else "unknown"
             log_tool_execution(
                 tool_name="create_task",
-                user_id=user_id,
+                user_id=safe_user_id,
                 success=False,
                 input_params=params,
                 error_details=str(e)

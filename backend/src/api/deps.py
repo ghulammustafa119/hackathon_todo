@@ -41,5 +41,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     """
     token = credentials.credentials
     user = verify_token(token)
+    # Attach the raw token to the user context for tools that need it
+    user["raw_token"] = token
     return user
 
