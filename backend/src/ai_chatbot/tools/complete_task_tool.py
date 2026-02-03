@@ -69,11 +69,15 @@ class CompleteTaskTool(BaseMCPTaskTool):
 
             # Update task completion status via backend client
             try:
-                updated_task = await backend_client.toggle_task_completion(
+                response = await backend_client.toggle_task_completion(
                     task_id=task_id,
                     completed=completed,
                     token=token  # Use the token passed from the API layer
                 )
+
+                # The response from toggle_task_completion contains id and completed status
+                # Get the full task details to provide complete information back
+                updated_task = await backend_client.get_task(task_id=task_id, token=token)
 
                 # Log successful tool execution
                 duration = (__import__('time').time() - start_time) * 1000

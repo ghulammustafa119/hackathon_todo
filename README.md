@@ -136,6 +136,8 @@ All stateful behavior is explicitly deferred to Phase V.
 - MCP tools for secure backend operations (create_task, list_tasks, update_task, delete_task, complete_task)
 - JWT token-based authentication and user isolation
 - Chat interface integrated into the web dashboard
+- **Numbered task reference support** - Reference tasks by number after viewing list (e.g., "show my tasks" → "mark task 6 as done")
+- **Smart task resolution** - Handles both numbered references and title-based searches
 - Error handling with clarification for ambiguous requests
 - **Modern UI** with enhanced chat interface and improved UX
 
@@ -146,6 +148,7 @@ All stateful behavior is explicitly deferred to Phase V.
 - **JWT Propagation**: Authentication tokens passed from frontend → agent → backend
 - **User Isolation**: Strict enforcement of user boundaries via authentication
 - **Hugging Face Integration**: Leverages open-source models for deployment flexibility
+- **Direct Database Access**: Optimized task list retrieval for improved performance and reliability
 
 ### Usage
 
@@ -156,6 +159,15 @@ All stateful behavior is explicitly deferred to Phase V.
    - "Show me my tasks"
    - "Mark the meeting preparation task as done"
    - "Update my project deadline task"
+   - "Mark task 6 as done" (after viewing task list)
+   - "Delete task 3" (after viewing task list)
+
+### Enhanced Functionality
+
+The AI chatbot now supports numbered task references:
+- After saying "show my tasks", you'll see a numbered list (1, 2, 3...)
+- You can then reference tasks by number: "mark task 5 as done", "delete task 2"
+- The system maintains proper task indexing even after tasks are added/removed
 
 ### Project Structure
 
@@ -269,6 +281,23 @@ This project follows Spec-Driven Development:
 ## License
 
 Spec-Driven Development - Internal Project
+
+## Troubleshooting
+
+### Common Issues and Fixes
+
+**Issue**: "Could not find task #X" when trying to reference tasks by number
+**Solution**: This issue has been resolved by implementing direct database access for task list retrieval, ensuring proper task indexing between "show my tasks" and subsequent numbered references.
+
+**Issue**: Task completion not working properly
+**Solution**: Fixed API endpoint mismatch between client and backend (PATCH /api/tasks/{id}/complete)
+
+### Enhanced Numbered Task Reference System
+
+The system now properly handles the workflow:
+1. User says "show my tasks" → AI displays numbered list (1-18)
+2. User says "mark task 6 as done" → AI resolves index 6 to actual task ID
+3. Operation completes successfully with proper task status update
 
 ---
 

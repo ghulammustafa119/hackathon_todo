@@ -64,18 +64,35 @@ class InputProcessor:
         Returns:
             Natural language response
         """
-        # Use the agent to list tasks
-        result = await self.agent.process_request(text, token, user_id)
-
-        # After getting the result, we need to fetch the tasks ourselves to store the mapping
-        # This is because the agent processes it but doesn't necessarily return the raw task data
         try:
-            from ..services.api_client import backend_client
             from ..services.task_index_mapper import task_index_mapper
+            from ...database.session import get_session
+            from ...models.task import Task
+            from sqlmodel import select
 
-            # Fetch the tasks to store the index mapping
-            response = await backend_client.list_tasks(token=token)
-            user_tasks = response.get('tasks', []) if isinstance(response, dict) else []
+            # Use the agent to list tasks
+            result = await self.agent.process_request(text, token, user_id)
+
+            # Get tasks directly from the database to store the index mapping
+            # This avoids potential issues with HTTP calls within the same process
+            with next(get_session()) as session:
+                statement = select(Task).where(Task.user_id == str(user_id))
+                tasks_from_db = session.exec(statement).all()
+
+                # Convert tasks to the expected format
+                user_tasks = []
+                for task in tasks_from_db:
+                    task_dict = {
+                        'id': str(task.id),
+                        'title': task.title,
+                        'description': task.description,
+                        'completed': task.completed,
+                        'created_at': task.created_at.isoformat() if task.created_at else None,
+                        'updated_at': task.updated_at.isoformat() if task.updated_at else None,
+                        'completed_at': task.completed_at.isoformat() if task.completed_at else None,
+                        'user_id': str(task.user_id)
+                    }
+                    user_tasks.append(task_dict)
 
             # Store the task list for future reference
             task_index_mapper.store_task_list(user_id, user_tasks)
@@ -226,10 +243,30 @@ class InputProcessor:
 
             if len(matching_tasks) == 0:
                 # No matching tasks found - show user their tasks and ask for clarification
-                from ..services.api_client import backend_client
                 try:
-                    response = await backend_client.list_tasks(token=token)
-                    user_tasks = response.get('tasks', []) if isinstance(response, dict) else []
+                    # Get tasks directly from the database to avoid HTTP call issues
+                    from ...database.session import get_session
+                    from ...models.task import Task
+                    from sqlmodel import select
+
+                    with next(get_session()) as session:
+                        statement = select(Task).where(Task.user_id == str(user_id))
+                        tasks_from_db = session.exec(statement).all()
+
+                        # Convert tasks to the expected format
+                        user_tasks = []
+                        for task in tasks_from_db:
+                            task_dict = {
+                                'id': str(task.id),
+                                'title': task.title,
+                                'description': task.description,
+                                'completed': task.completed,
+                                'created_at': task.created_at.isoformat() if task.created_at else None,
+                                'updated_at': task.updated_at.isoformat() if task.updated_at else None,
+                                'completed_at': task.completed_at.isoformat() if task.completed_at else None,
+                                'user_id': str(task.user_id)
+                            }
+                            user_tasks.append(task_dict)
 
                     # Store the task list for future reference
                     from ..services.task_index_mapper import task_index_mapper
@@ -359,10 +396,30 @@ class InputProcessor:
                             return format_error_response("TASK_NOT_FOUND", f"Could not find task #{task_number}. The task list may have changed since you last viewed it.")
                 else:
                     # No recent task list, so we need to fetch it to map the index
-                    from ..services.api_client import backend_client
                     try:
-                        response = await backend_client.list_tasks(token=token)
-                        user_tasks = response.get('tasks', []) if isinstance(response, dict) else []
+                        # Get tasks directly from the database to avoid HTTP call issues
+                        from ...database.session import get_session
+                        from ...models.task import Task
+                        from sqlmodel import select
+
+                        with next(get_session()) as session:
+                            statement = select(Task).where(Task.user_id == str(user_id))
+                            tasks_from_db = session.exec(statement).all()
+
+                            # Convert tasks to the expected format
+                            user_tasks = []
+                            for task in tasks_from_db:
+                                task_dict = {
+                                    'id': str(task.id),
+                                    'title': task.title,
+                                    'description': task.description,
+                                    'completed': task.completed,
+                                    'created_at': task.created_at.isoformat() if task.created_at else None,
+                                    'updated_at': task.updated_at.isoformat() if task.updated_at else None,
+                                    'completed_at': task.completed_at.isoformat() if task.completed_at else None,
+                                    'user_id': str(task.user_id)
+                                }
+                                user_tasks.append(task_dict)
 
                         if task_number > 0 and task_number <= len(user_tasks):
                             # Valid task number - get the actual task ID
@@ -400,11 +457,31 @@ class InputProcessor:
 
                 if len(matching_tasks) == 0:
                     # No matching tasks found - show user their tasks and ask for clarification
-                    from ..services.api_client import backend_client
                     try:
                         # Get all user tasks to show them what's available
-                        response = await backend_client.list_tasks(token=token)
-                        user_tasks = response.get('tasks', []) if isinstance(response, dict) else []
+                        # Get tasks directly from the database to avoid HTTP call issues
+                        from ...database.session import get_session
+                        from ...models.task import Task
+                        from sqlmodel import select
+
+                        with next(get_session()) as session:
+                            statement = select(Task).where(Task.user_id == str(user_id))
+                            tasks_from_db = session.exec(statement).all()
+
+                            # Convert tasks to the expected format
+                            user_tasks = []
+                            for task in tasks_from_db:
+                                task_dict = {
+                                    'id': str(task.id),
+                                    'title': task.title,
+                                    'description': task.description,
+                                    'completed': task.completed,
+                                    'created_at': task.created_at.isoformat() if task.created_at else None,
+                                    'updated_at': task.updated_at.isoformat() if task.updated_at else None,
+                                    'completed_at': task.completed_at.isoformat() if task.completed_at else None,
+                                    'user_id': str(task.user_id)
+                                }
+                                user_tasks.append(task_dict)
 
                         # Store the task list for future reference
                         from ..services.task_index_mapper import task_index_mapper
