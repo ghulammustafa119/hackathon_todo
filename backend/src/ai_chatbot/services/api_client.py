@@ -268,8 +268,8 @@ class PhaseIIBackendClient:
         json_data = {"completed": completed}
 
         return await self._make_request(
-            method="PUT",
-            endpoint=f"/api/tasks/{task_id}/toggle_completion",
+            method="PATCH",
+            endpoint=f"/api/tasks/{task_id}/complete",
             headers=headers,
             json_data=json_data
         )
