@@ -121,18 +121,18 @@ All stateful behavior is explicitly deferred to Phase V.
 - **Token Propagation**: JWT tokens passed from frontend → agent → backend APIs
 - **MCP Tools**: Secure backend operations with user-scoped validation
 
-### AI Provider Migration (Hugging Face)
+### AI Provider Migration (Cohere)
 
-- **Provider**: Migrated from OpenAI to Hugging Face Inference API
-- **Model**: Uses Llama 3 or other open-source models
-- **Deployment**: Optimized for Hugging Face Spaces deployment
+- **Provider**: Using Cohere API for natural language processing
+- **Model**: Uses Cohere command-nightly or other Cohere models
+- **Deployment**: Optimized for Cohere API integration
 - **Compatibility**: Frontend remains Vercel-compatible
 - **Stateless**: Maintains strict stateless architecture
 
 ### Features
 
 - Natural language task creation, listing, updating, deletion, and completion
-- Hugging Face Agent integration for intent detection and tool orchestration
+- Cohere Agent integration for intent detection and tool orchestration
 - MCP tools for secure backend operations (create_task, list_tasks, update_task, delete_task, complete_task)
 - JWT token-based authentication and user isolation
 - Chat interface integrated into the web dashboard
@@ -147,7 +147,7 @@ All stateful behavior is explicitly deferred to Phase V.
 - **MCP Tools**: All operations routed through MCP tools to Phase II backend
 - **JWT Propagation**: Authentication tokens passed from frontend → agent → backend
 - **User Isolation**: Strict enforcement of user boundaries via authentication
-- **Hugging Face Integration**: Leverages open-source models for deployment flexibility
+- **Cohere Integration**: Leverages Cohere API for natural language processing and intent detection
 - **Direct Database Access**: Optimized task list retrieval for improved performance and reliability
 
 ### Usage
@@ -173,8 +173,8 @@ The AI chatbot now supports numbered task references:
 
 ```
 backend/src/ai_chatbot/
-├── agents/                 # Hugging Face agent implementations
-│   ├── hf_agent.py        # Main AI agent (replaces OpenAI agent)
+├── agents/                 # Cohere agent implementations
+│   ├── cohere_agent.py    # Main AI agent
 │   └── tool_chain.py      # Tool chaining within a single request
 ├── tools/                 # MCP tool implementations
 │   ├── create_task_tool.py
@@ -248,16 +248,15 @@ Advanced cloud-native architecture with Kafka event streaming and Dapr for distr
 
 ## AI Provider Migration
 
-### From OpenAI to Hugging Face
-- **Provider**: Switched from OpenAI to Hugging Face Inference API
-- **Cost**: Reduced operational costs with open-source model alternatives
-- **Deployment**: Optimized for Hugging Face Spaces deployment
-- **Flexibility**: Support for various open-source models (Llama 3, etc.)
+### Cohere AI Integration
+- **Provider**: Using Cohere API for natural language processing
+- **Model**: Cohere command-nightly or other Cohere models
+- **Deployment**: Optimized for Cohere API integration
+- **Flexibility**: Support for various Cohere models and configurations
 - **Compatibility**: Maintains Vercel frontend compatibility
 
 ### Configuration
-- **Environment Variables**: Updated to use HF_API_TOKEN, HF_MODEL, HF_API_URL
-- **Backward Compatibility**: Deprecated OpenAI settings preserved for reference
+- **Environment Variables**: Uses COHERE_API_KEY, COHERE_MODEL
 - **Security**: Maintains JWT per-request authentication
 - **Stateless**: Preserves strict stateless architecture
 
@@ -305,5 +304,5 @@ The system now properly handles the workflow:
 **Constitution-first governance**
 **Stateless architecture with JWT authentication**
 **Python 3.11+**
-**Hugging Face AI Integration**
+**Cohere AI Integration**
 **Modern UI/UX Design**
