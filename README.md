@@ -1,3 +1,13 @@
+---
+title: AI Todo App
+emoji: 🚀
+colorFrom: blue
+colorTo: yellow
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # Todo Evolution Project
 
 A 5-phase evolution of a Todo List Manager, demonstrating Spec-Driven Development (SDD) principles with stateless architecture and AI integration.

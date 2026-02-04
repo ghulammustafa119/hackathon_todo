@@ -1,9 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* config options here */
-  // Remove static export to allow middleware
-  // output: 'export',  // Commented out to allow dynamic features like middleware
-  trailingSlash: false,
+  output: 'export',
+  trailingSlash: true,
+  images: {
+    unoptimized: true,
+  },
+  reactStrictMode: true,
 };
 
 module.exports = nextConfig;
