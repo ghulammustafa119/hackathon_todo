@@ -40,7 +40,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
 COPY --from=frontend-builder /app/frontend/out /app/frontend/build
 
 # Copy backend code
-COPY backend/ /app/backend/
+COPY backend/src/ /app/backend/src/
+COPY backend/requirements.txt /app/backend/requirements.txt
 
 # Configure nginx
 RUN rm /etc/nginx/sites-enabled/default
