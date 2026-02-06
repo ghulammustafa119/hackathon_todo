@@ -52,8 +52,12 @@ class TokenService {
       // Add padding if needed
       const paddedPayload = payload + '='.repeat((4 - payload.length % 4) % 4);
 
+      // Properly decode base64
       const decodedPayload = atob(paddedPayload);
-      return JSON.parse(decodedPayload);
+      const parsedPayload = JSON.parse(decodedPayload);
+
+      // Ensure the parsed payload is of the correct type
+      return typeof parsedPayload === 'object' ? parsedPayload : null;
     } catch (error) {
       console.error('Error decoding token:', error);
       return null;
@@ -63,8 +67,8 @@ class TokenService {
   // Check if token is expired
   isTokenExpired(token: string | null): boolean {
     const decoded = this.decodeToken(token);
-    if (!decoded || !decoded.exp) {
-      return true; // If no expiration, consider expired
+    if (!decoded || typeof decoded.exp !== 'number') {
+      return true; // If no expiration or wrong type, consider expired
     }
 
     const currentTime = Math.floor(Date.now() / 1000);
@@ -74,13 +78,20 @@ class TokenService {
   // Get user ID from token
   getUserIdFromToken(token: string | null): string | null {
     const decoded = this.decodeToken(token);
-    return decoded ? decoded.sub || decoded.user_id : null;
+    if (!decoded) return null;
+
+    // Safely access user ID properties
+    return typeof decoded.sub === 'string' ? decoded.sub :
+           typeof decoded.user_id === 'string' ? decoded.user_id : null;
   }
 
   // Get token expiration time
   getTokenExpiration(token: string | null): number | null {
     const decoded = this.decodeToken(token);
-    return decoded ? decoded.exp : null;
+    if (!decoded || typeof decoded.exp !== 'number') {
+      return null;
+    }
+    return decoded.exp;
   }
 }
 

@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Task } from '@/types/task';
+import { Task } from '@/src/types/task';
 
 interface TaskUpdateFormProps {
   task: Task;
-  onUpdateTask: (taskId: string, updatedData: Partial<Task>) => void;
+  onUpdateTask: (taskId: string, updatedData: Partial<Task>) => Promise<void>;
   onCancel: () => void;
 }
+
 
 export default function TaskUpdateForm({ task, onUpdateTask, onCancel }: TaskUpdateFormProps) {
   const [title, setTitle] = useState<string>(task?.title || '');
@@ -29,9 +30,9 @@ export default function TaskUpdateForm({ task, onUpdateTask, onCancel }: TaskUpd
     setError('');
 
     try {
-      const updatedTask = {
+      const updatedTask: Partial<Task> = {
         title,
-        description: description || null,
+        ...(description ? { description } : {}),
       };
 
       await onUpdateTask(task.id, updatedTask);

@@ -103,3 +103,6 @@ config/
 *.tmp
 *.temp
 .env
+
+# Exclude the ai-todo-app directory which is a separate git repository
+ai-todo-app/

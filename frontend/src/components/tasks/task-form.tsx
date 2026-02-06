@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import apiService from '@/lib/api';
-import { Task } from '@/types/task';
+import apiService from '@/src/lib/api';
+import { Task } from '@/src/types/task';
 
 interface TaskFormProps {
   onTaskCreated: (task: Task) => void;
