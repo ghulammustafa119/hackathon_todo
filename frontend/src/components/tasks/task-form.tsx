@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import apiService from '@/src/lib/api';
-import { Task } from '@/src/types/task';
+import apiService from '@/lib/api';
+import { Task } from '@/types/task';
 
 interface TaskFormProps {
   onTaskCreated: (task: Task) => void;
@@ -23,7 +23,7 @@ export default function TaskForm({ onTaskCreated, onCancel }: TaskFormProps) {
     try {
       const newTask = {
         title,
-        description: description || null,
+        ...(description && { description }),
         completed: false,
       };
 

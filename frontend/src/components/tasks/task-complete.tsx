@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Task } from '@/src/types/task';
+import { Task } from '@/types/task';
 
 interface TaskCompleteToggleProps {
   task: Task;
