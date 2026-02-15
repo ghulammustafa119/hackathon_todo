@@ -14,8 +14,21 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-@router.post("/", response_model=TaskRead)
+
+def _verify_user_id(user_id: str, current_user: dict):
+    """Verify that the JWT user matches the URL user_id."""
+    jwt_user_id = current_user.get("sub")
+    if str(jwt_user_id) != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to access this user's tasks"
+        )
+    return jwt_user_id
+
+
+@router.post("/{user_id}/tasks", response_model=TaskRead)
 def create_task(
+    user_id: str,
     task: TaskCreate,
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
@@ -23,32 +36,34 @@ def create_task(
     """
     Create a new task for the authenticated user.
     """
-    user_id = current_user.get("sub")
+    _verify_user_id(user_id, current_user)
 
     # Use the service layer to handle the creation with proper timezone handling
     task_service = TaskService(session)
-    created_task = task_service.create_task(task, str(user_id))
+    created_task = task_service.create_task(task, user_id)
 
     return created_task
 
-@router.get("/", response_model=List[TaskRead])
+@router.get("/{user_id}/tasks", response_model=List[TaskRead])
 def read_tasks(
+    user_id: str,
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """
     Retrieve all tasks for the authenticated user.
     """
-    user_id = current_user.get("sub")
+    _verify_user_id(user_id, current_user)
 
     # Query tasks for the current user only
-    statement = select(Task).where(Task.user_id == str(user_id))
+    statement = select(Task).where(Task.user_id == user_id)
     tasks = session.exec(statement).all()
 
     return tasks
 
-@router.get("/{task_id}", response_model=TaskRead)
+@router.get("/{user_id}/tasks/{task_id}", response_model=TaskRead)
 def read_task(
+    user_id: str,
     task_id: str,
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
@@ -56,9 +71,9 @@ def read_task(
     """
     Retrieve a specific task by ID for the authenticated user.
     """
-    user_id = current_user.get("sub")
+    _verify_user_id(user_id, current_user)
 
-    statement = select(Task).where(Task.id == task_id, Task.user_id == str(user_id))
+    statement = select(Task).where(Task.id == task_id, Task.user_id == user_id)
     task = session.exec(statement).first()
 
     if not task:
@@ -69,8 +84,9 @@ def read_task(
 
     return task
 
-@router.put("/{task_id}", response_model=TaskRead)
+@router.put("/{user_id}/tasks/{task_id}", response_model=TaskRead)
 def update_task(
+    user_id: str,
     task_id: str,
     task_update: TaskUpdate,
     current_user: dict = Depends(get_current_user),
@@ -79,11 +95,11 @@ def update_task(
     """
     Update a specific task by ID for the authenticated user.
     """
-    user_id = current_user.get("sub")
+    _verify_user_id(user_id, current_user)
 
     # Use the service layer to handle the update with proper timezone handling
     task_service = TaskService(session)
-    updated_task = task_service.update_task(task_id, task_update, str(user_id))
+    updated_task = task_service.update_task(task_id, task_update, user_id)
 
     if not updated_task:
         raise HTTPException(
@@ -93,8 +109,9 @@ def update_task(
 
     return updated_task
 
-@router.delete("/{task_id}")
+@router.delete("/{user_id}/tasks/{task_id}")
 def delete_task(
+    user_id: str,
     task_id: str,
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
@@ -102,9 +119,9 @@ def delete_task(
     """
     Delete a specific task by ID for the authenticated user.
     """
-    user_id = current_user.get("sub")
+    _verify_user_id(user_id, current_user)
 
-    statement = select(Task).where(Task.id == task_id, Task.user_id == str(user_id))
+    statement = select(Task).where(Task.id == task_id, Task.user_id == user_id)
     db_task = session.exec(statement).first()
 
     if not db_task:
@@ -118,8 +135,9 @@ def delete_task(
 
     return {"message": "Task deleted successfully"}
 
-@router.patch("/{task_id}/complete")
+@router.patch("/{user_id}/tasks/{task_id}/complete")
 def toggle_task_completion(
+    user_id: str,
     task_id: str,
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
@@ -127,11 +145,11 @@ def toggle_task_completion(
     """
     Toggle the completion status of a specific task for the authenticated user.
     """
-    user_id = current_user.get("sub")
+    _verify_user_id(user_id, current_user)
 
     # Use the service layer to handle the toggle with proper timezone handling
     task_service = TaskService(session)
-    toggled_task = task_service.toggle_task_completion(task_id, str(user_id))
+    toggled_task = task_service.toggle_task_completion(task_id, user_id)
 
     if not toggled_task:
         raise HTTPException(

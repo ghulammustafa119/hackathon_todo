@@ -15,7 +15,7 @@ class TaskCreateBase(SQLModel):
 
 class Task(TaskBase, table=True):
     id: Optional[str] = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    user_id: str = Field(foreign_key="user.id")  # Better Auth provides user ID as string
+    user_id: str = Field(index=True)  # User ID from Better Auth JWT token
 
     @staticmethod
     def _get_pakistani_time():

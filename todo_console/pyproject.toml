@@ -1,0 +1,16 @@
+[project]
+name = "todo-console"
+version = "1.0.0"
+description = "Phase I - In-Memory Python Console Todo App"
+requires-python = ">=3.13"
+readme = "README.md"
+
+[project.scripts]
+todo = "todo_console.main:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.backends"
+
+[tool.uv]
+dev-dependencies = ["pytest>=8.0"]

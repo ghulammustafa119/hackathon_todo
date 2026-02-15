@@ -20,10 +20,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include API routers
-app.include_router(tasks_router, prefix="/api/tasks", tags=["tasks"])
+# Include API routers - using /api/{user_id}/tasks pattern per docs
+app.include_router(tasks_router, prefix="/api", tags=["tasks"])
 app.include_router(auth_router, prefix="/api", tags=["auth"])
-app.include_router(ai_chat_router, prefix="", tags=["ai_chat"])
+app.include_router(ai_chat_router, prefix="/api", tags=["ai_chat"])
 
 @app.get("/")
 def read_root():

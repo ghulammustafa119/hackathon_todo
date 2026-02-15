@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import apiService from '@/lib/api';
+import authClient from '@/lib/auth';
 
 interface FormData {
   email: string;
@@ -27,23 +27,20 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const response = await apiService.login(formData.email, formData.password);
-
-      // Store token in localStorage
-      localStorage.setItem('auth_token', response.token);
-
-      // Also set the token in a cookie for middleware access
-      await fetch('/api/auth/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token: response.token }),
+      // Use Better Auth for login
+      const result = await authClient.login({
+        email: formData.email,
+        password: formData.password,
       });
+
+      if (!result.success) {
+        setError(result.error || 'Login failed');
+        return;
+      }
 
       // Redirect to dashboard
       router.push('/dashboard');
-      router.refresh(); // Refresh to update the UI
+      router.refresh();
     } catch (err: any) {
       setError(err.message || 'Login failed');
     } finally {

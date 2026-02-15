@@ -99,7 +99,7 @@ A full-stack web application with persistent data storage and user authenticatio
 - **Stateless**: No server-side session storage
 - **Modern UI**: Clean, responsive design with intuitive user experience
 
-## Phase III - AI Chatbot Integration (Stateless)
+## Phase III - AI Chatbot Integration with Official MCP SDK (Stateless)
 
 A natural language interface for managing Todo tasks using AI agents and MCP tools.
 

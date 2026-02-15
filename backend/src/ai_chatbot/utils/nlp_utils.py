@@ -136,9 +136,9 @@ def detect_intent(text: str) -> str:
     # Define keywords for each intent
     create_keywords = ['add', 'create', 'make', 'new', 'setup', 'establish', 'put in', 'buy', 'get', 'for me', 'to do', 'need to', 'want to']
     list_keywords = ['show', 'display', 'see', 'view', 'get', 'fetch', 'what', 'list', 'all', 'my']
-    update_keywords = ['update', 'change', 'modify', 'edit', 'adjust', 'alter']
-    delete_keywords = ['delete', 'remove', 'erase', 'cancel', 'get rid of', 'eliminate']
-    complete_keywords = ['complete', 'finish', 'done', 'mark', 'as done', 'accomplish', 'check', 'tick']
+    update_keywords = ['update', 'change', 'modify', 'edit', 'adjust', 'alter', 'rename', 'switch', 'replace']
+    delete_keywords = ['delete', 'remove', 'erase', 'cancel', 'get rid of', 'eliminate', 'trash', 'discard']
+    complete_keywords = ['complete', 'finish', 'done', 'mark', 'as done', 'accomplish', 'check', 'tick', 'completed']
 
     # Count keyword matches for each intent
     scores = {
@@ -149,32 +149,43 @@ def detect_intent(text: str) -> str:
         'complete_task': sum(1 for keyword in complete_keywords if keyword in text_lower)
     }
 
-    # Special handling for common phrases that might indicate completion without specific task
-    # "mark task as done" or "mark a task as done" - if no specific task mentioned, should list tasks first
-    if ('mark' in text_lower or 'complete' in text_lower or 'done' in text_lower) and ('task' in text_lower):
-        # If there are no specific task identifiers (like a title), boost list_tasks to show available tasks
-        # Check if user mentioned a specific task title
-        has_specific_identifier = any(word in text_lower for word in ['named', 'called', 'titled', '"', "'"])
-        if not has_specific_identifier and scores['complete_task'] > 0 and scores['list_tasks'] < 2:
-            # If user wants to complete a task but hasn't specified which one, they probably want to see their tasks first
-            scores['list_tasks'] = max(scores['list_tasks'], scores['complete_task'])
+    # Enhanced context-aware intent detection
+    # Look for specific patterns that indicate the intent more clearly
+
+    # Check for task references with action words (e.g., "task 3", "the meeting task", etc.)
+    has_task_reference = bool(re.search(r'task \d+|the \w+ task|\w+ task', text_lower))
+
+    # Specific patterns for each intent
+    # Complete task: "mark task 3 as complete", "complete task 5", etc.
+    complete_pattern1 = re.search(r'(mark|complete|finish|done).*task', text_lower)
+    complete_pattern2 = re.search(r'task.*as (complete|done|finished)', text_lower)
+    if complete_pattern1 or complete_pattern2 or (scores['complete_task'] > 0 and has_task_reference):
+        # If complete keywords are present along with task reference, prioritize complete_task
+        scores['complete_task'] = max(scores['complete_task'], 3)
+
+    # Update task: "change task 1", "update the meeting task", etc.
+    update_pattern = re.search(r'(change|update|modify|edit|rename).*task', text_lower)
+    if update_pattern or (scores['update_task'] > 0 and has_task_reference):
+        # If update keywords are present along with task reference, prioritize update_task
+        scores['update_task'] = max(scores['update_task'], 3)
+
+    # Delete task: "delete the meeting task", "remove task 2", etc.
+    delete_pattern = re.search(r'(delete|remove|cancel).*task', text_lower)
+    if delete_pattern or (scores['delete_task'] > 0 and has_task_reference):
+        # If delete keywords are present along with task reference, prioritize delete_task
+        scores['delete_task'] = max(scores['delete_task'], 3)
 
     # Special handling for "for me" or "need to" which often indicate creation
     if 'for me' in text_lower or 'need to' in text_lower or 'want to' in text_lower:
         # Boost create_task score if these phrases are present
         scores['create_task'] += 2
 
-    # Special handling for "list" keyword to avoid false positives
-    # If "list" appears but other action words are stronger indicators, prefer the action
-    if 'list' in text_lower and 'my' not in text_lower:
-        # Check if this is likely referring to a "shopping list" or similar rather than wanting to list tasks
-        # If delete/update/complete keywords are present, prioritize those
-        if scores['delete_task'] > 0 or scores['update_task'] > 0 or scores['complete_task'] > 0:
-            # Create a copy of scores without 'list_tasks' to prioritize action in phrases like "delete my shopping list"
-            action_scores = {k: v for k, v in scores.items() if k != 'list_tasks'}
-            if action_scores:  # Check if there are other scores
-                max_intent = max(action_scores, key=action_scores.get)
-                return max_intent if action_scores[max_intent] > 0 else 'list_tasks'
+    # Special handling for status queries
+    if 'pending' in text_lower or 'incomplete' in text_lower:
+        scores['list_tasks'] += 1  # Boost for status-specific queries
+    if 'completed' in text_lower or 'done' in text_lower:
+        # If the query is specifically about completed tasks, still list but note the context
+        scores['list_tasks'] += 1
 
     # Return the intent with highest score, defaulting to list_tasks if no clear match
     max_intent = max(scores, key=scores.get)
@@ -263,17 +274,25 @@ def extract_completion_status(text: str) -> Optional[bool]:
     """
     text_lower = text.lower()
 
-    # Keywords indicating completion
-    complete_keywords = ['complete', 'done', 'finished', 'accomplished', 'marked done']
-    # Keywords indicating incompleteness
-    incomplete_keywords = ['incomplete', 'not done', 'not finished', 'still pending']
-
-    complete_score = sum(1 for keyword in complete_keywords if keyword in text_lower)
+    # Check incomplete phrases FIRST (more specific, should take priority)
+    incomplete_keywords = ['incomplete', 'not done', 'not finished', 'not complete', 'still pending']
     incomplete_score = sum(1 for keyword in incomplete_keywords if keyword in text_lower)
 
-    if complete_score > incomplete_score:
-        return True
-    elif incomplete_score > complete_score:
+    # Keywords indicating completion (only count if NOT preceded by negation)
+    # Use word-boundary-aware matching to avoid "complete" matching inside "incomplete"
+    import re
+    complete_patterns = [
+        r'(?<!\bnot\s)(?<!\bin)complete(?:d)?\b',  # "complete/completed" but not "incomplete" or "not complete"
+        r'(?<!\bnot\s)\bdone\b',                    # "done" but not "not done"
+        r'(?<!\bnot\s)\bfinished\b',                # "finished" but not "not finished"
+        r'\baccomplished\b',
+        r'\bmarked\s+done\b',
+    ]
+    complete_score = sum(1 for pattern in complete_patterns if re.search(pattern, text_lower))
+
+    if incomplete_score > 0 and incomplete_score >= complete_score:
         return False
+    elif complete_score > 0:
+        return True
     else:
         return None  # Status unclear

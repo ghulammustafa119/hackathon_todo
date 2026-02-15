@@ -6,7 +6,6 @@ import logging
 from typing import Dict, Any, List, Optional
 
 from ..config import config
-from ..tools.registration import tool_registry
 from ..utils.response_formatter import (
     format_task_response,
     format_tasks_list_response,
@@ -15,8 +14,11 @@ from ..utils.response_formatter import (
 )
 from ..utils.logging import agent_logger, log_agent_operation
 from ...services.cohere_client import get_cohere_response
-from ..tools import loader  # Import to ensure all tools are loaded and registered
 from ..services.task_index_mapper import task_index_mapper
+# Import MCP client lazily to avoid import-time issues
+def get_mcp_client():
+    from ...mcp_server.mcp_client import todo_mcp_client
+    return todo_mcp_client
 
 
 class CohereChatbotAgent:
@@ -39,13 +41,17 @@ class CohereChatbotAgent:
         """
         tools = []
 
-        # Define create_task tool
+        # Define create_task tool - now using MCP protocol
         tools.append({
             "name": "create_task",
-            "description": "Create a new task with title, description, and optional due date",
+            "description": "Create a new task with title, description, and optional due date via MCP server",
             "parameters": {
                 "type": "object",
                 "properties": {
+                    "token": {
+                        "type": "string",
+                        "description": "JWT token for authentication"
+                    },
                     "title": {
                         "type": "string",
                         "description": "Title of the task to be created"
@@ -59,42 +65,43 @@ class CohereChatbotAgent:
                         "description": "Optional due date in ISO 8601 format (YYYY-MM-DD)"
                     }
                 },
-                "required": ["title"]
+                "required": ["token", "title"]
             }
         })
 
-        # Define list_tasks tool
+        # Define list_tasks tool - now using MCP protocol
         # DISABLED (Phase III): Filtering is disabled to comply with the Stateless System Rule. Deferred to Phase V.
         tools.append({
             "name": "list_tasks",
-            "description": "Retrieve tasks (filtering disabled in Phase III)",
+            "description": "Retrieve tasks via MCP server (filtering disabled in Phase III)",
             "parameters": {
                 "type": "object",
                 "properties": {
+                    "token": {
+                        "type": "string",
+                        "description": "JWT token for authentication"
+                    },
                     "filter": {
                         "type": "string",
                         "enum": ["all", "pending", "completed"],
                         "description": "Filter tasks by completion status - IGNORED in Phase III"
-                    },
-                    "limit": {
-                        "type": "integer",
-                        "description": "Maximum number of tasks to return - IGNORED in Phase III"
-                    },
-                    "search_query": {
-                        "type": "string",
-                        "description": "Optional search term to filter tasks by title or description - IGNORED in Phase III"
                     }
-                }
+                },
+                "required": ["token"]
             }
         })
 
-        # Define update_task tool
+        # Define update_task tool - now using MCP protocol
         tools.append({
             "name": "update_task",
-            "description": "Update an existing task with new values",
+            "description": "Update an existing task with new values via MCP server",
             "parameters": {
                 "type": "object",
                 "properties": {
+                    "token": {
+                        "type": "string",
+                        "description": "JWT token for authentication"
+                    },
                     "task_id": {
                         "type": "string",
                         "description": "ID of the task to update"
@@ -112,33 +119,41 @@ class CohereChatbotAgent:
                         "description": "New due date in ISO 8601 format (optional)"
                     }
                 },
-                "required": ["task_id"]
+                "required": ["token", "task_id"]
             }
         })
 
-        # Define delete_task tool
+        # Define delete_task tool - now using MCP protocol
         tools.append({
             "name": "delete_task",
-            "description": "Delete an existing task",
+            "description": "Delete an existing task via MCP server",
             "parameters": {
                 "type": "object",
                 "properties": {
+                    "token": {
+                        "type": "string",
+                        "description": "JWT token for authentication"
+                    },
                     "task_id": {
                         "type": "string",
                         "description": "ID of the task to delete"
                     }
                 },
-                "required": ["task_id"]
+                "required": ["token", "task_id"]
             }
         })
 
-        # Define complete_task tool
+        # Define complete_task tool - now using MCP protocol
         tools.append({
             "name": "complete_task",
-            "description": "Toggle the completion status of a task",
+            "description": "Toggle the completion status of a task via MCP server",
             "parameters": {
                 "type": "object",
                 "properties": {
+                    "token": {
+                        "type": "string",
+                        "description": "JWT token for authentication"
+                    },
                     "task_id": {
                         "type": "string",
                         "description": "ID of the task to update completion status"
@@ -148,7 +163,7 @@ class CohereChatbotAgent:
                         "description": "Desired completion status (true for completed, false for incomplete)"
                     }
                 },
-                "required": ["task_id", "completed"]
+                "required": ["token", "task_id", "completed"]
             }
         })
 
@@ -287,8 +302,13 @@ class CohereChatbotAgent:
                 response_text = f"Operation completed: {tool_name}"
         else:
             # Format the error response
-            error_code = tool_response.error.get('code', 'UNKNOWN_ERROR') if tool_response.error else 'UNKNOWN_ERROR'
-            error_msg = tool_response.error.get('message', 'Unknown error occurred') if tool_response.error else 'Unknown error occurred'
+            # Ensure tool_response.error is a dict before calling .get() on it
+            if tool_response.error and isinstance(tool_response.error, dict):
+                error_code = tool_response.error.get('code', 'UNKNOWN_ERROR')
+                error_msg = tool_response.error.get('message', 'Unknown error occurred')
+            else:
+                error_code = 'UNKNOWN_ERROR'
+                error_msg = str(tool_response.error) if tool_response.error else 'Unknown error occurred'
             response_text = format_error_response(error_code, error_msg)
             agent_logger.error(f"Tool execution failed: {error_code} - {error_msg}")
 
@@ -357,31 +377,53 @@ class CohereChatbotAgent:
             try:
                 # Look for JSON-like structure in the response
                 import re
-                json_match = re.search(r'\{.*\}', cohere_response, re.DOTALL)
-                if json_match:
-                    json_str = json_match.group()
+                # Look for JSON objects in the response - might be surrounded by text
+                json_matches = re.findall(r'\{[^{}]*(?:\{[^{}]*[^{}]*\}[^{}]*)*\}', cohere_response, re.DOTALL)
 
-                    # Parse as strict JSON
-                    parsed_response = json.loads(json_str)
+                # If the above regex doesn't work, try a simpler one
+                if not json_matches:
+                    # Simple approach: find content between curly braces
+                    json_matches = re.findall(r'\{.*?\}', cohere_response, re.DOTALL)
 
-                    # Check if it contains tool information
-                    if parsed_response and "tool" in parsed_response:
-                        tool_name = parsed_response["tool"]
-                        arguments = parsed_response.get("arguments", {})
+                if json_matches:
+                    # Try each potential JSON match
+                    for json_str in json_matches:
+                        try:
+                            # Clean up the JSON string
+                            json_str = json_str.strip()
+                            parsed_response = json.loads(json_str)
 
-                        # Log the detected tool for debugging
-                        agent_logger.info(f"Detected tool call: {tool_name} with args: {arguments}")
+                            # Only process if it's a dictionary (not a string, number, etc.)
+                            if isinstance(parsed_response, dict) and "tool" in parsed_response:
+                                tool_name = parsed_response["tool"]
+                                arguments = parsed_response.get("arguments", {})
 
-                        # Validate that the tool name is one of the allowed tools
-                        allowed_tools = {"create_task", "list_tasks", "update_task", "delete_task", "complete_task"}
-                        if tool_name not in allowed_tools:
-                            agent_logger.warning(f"Invalid tool name detected: {tool_name}")
-                            final_response = f"Sorry, I cannot perform the requested action. Available tools are: {', '.join(allowed_tools)}"
-                        else:
-                            # Handle all tools through the common handler
-                            final_response = await self._handle_tool_execution_and_format_response(
-                                tool_name, arguments, token, user_id
-                            )
+                                # Ensure arguments is always a dictionary to prevent 'str' object has no attribute 'get' error
+                                if not isinstance(arguments, dict):
+                                    arguments = {}
+
+                                # Log the detected tool for debugging
+                                agent_logger.info(f"Detected tool call: {tool_name} with args: {arguments}")
+
+                                # Validate that the tool name is one of the allowed tools
+                                allowed_tools = {"create_task", "list_tasks", "update_task", "delete_task", "complete_task"}
+                                if tool_name not in allowed_tools:
+                                    agent_logger.warning(f"Invalid tool name detected: {tool_name}")
+                                    final_response = f"Sorry, I cannot perform the requested action. Available tools are: {', '.join(allowed_tools)}"
+                                else:
+                                    # Handle all tools through the common handler
+                                    final_response = await self._handle_tool_execution_and_format_response(
+                                        tool_name, arguments, token, user_id
+                                    )
+                                break  # Exit the loop once we find a valid tool call
+                            else:
+                                # This JSON doesn't contain tool info or is not a dictionary, continue looking
+                                continue
+                        except json.JSONDecodeError:
+                            # This particular match wasn't valid JSON, continue to next match
+                            continue
+
+                    # If we went through all matches without finding a valid tool call
                     else:
                         # If no tool call was identified, return the generated text as is
                         final_response = cohere_response
@@ -439,21 +481,85 @@ class CohereChatbotAgent:
         user_id: Optional[str] = None
     ) -> Any:
         """
-        Execute a single tool call.
+        Execute a single tool call via the MCP server.
 
         Args:
             tool_name: Name of the tool to execute
             arguments: Arguments for the tool
-            token: JWT token for authentication (kept for backward compatibility but not used)
+            token: JWT token for authentication
             user_id: User ID for authentication (validated at API level)
 
         Returns:
             Result of the tool execution
         """
         try:
-            # Execute the tool - Note: execute_tool is now async
-            tool_response = await tool_registry.execute_tool(tool_name, arguments, token, user_id)
-            return tool_response
+            # Add the token to arguments for MCP tools
+            arguments_with_token = arguments.copy()
+            if "token" not in arguments_with_token:
+                arguments_with_token["token"] = token
+
+            # Execute the tool via the MCP client (not a context manager)
+            client = get_mcp_client()
+            if tool_name == "create_task":
+                result = await client.create_task(
+                    token=token,
+                    title=arguments_with_token.get("title", ""),
+                    description=arguments_with_token.get("description", ""),
+                    due_date=arguments_with_token.get("due_date", "")
+                )
+            elif tool_name == "list_tasks":
+                result = await client.list_tasks(
+                    token=token,
+                    filter_status=arguments_with_token.get("filter", "all")
+                )
+            elif tool_name == "update_task":
+                result = await client.update_task(
+                    token=token,
+                    task_id=arguments_with_token.get("task_id", ""),
+                    title=arguments_with_token.get("title"),
+                    description=arguments_with_token.get("description"),
+                    due_date=arguments_with_token.get("due_date")
+                )
+            elif tool_name == "delete_task":
+                result = await client.delete_task(
+                    token=token,
+                    task_id=arguments_with_token.get("task_id", "")
+                )
+            elif tool_name == "complete_task":
+                result = await client.complete_task(
+                    token=token,
+                    task_id=arguments_with_token.get("task_id", ""),
+                    completed=arguments_with_token.get("completed", True)
+                )
+            else:
+                # Unknown tool
+                result = {
+                    "success": False,
+                    "error": {"code": "UNKNOWN_TOOL", "message": f"Unknown tool: {tool_name}"}
+                }
+
+            # Create a response object that matches the expected format
+            class ToolResponse:
+                def __init__(self, result):
+                    # Handle case where result might be a string instead of dict
+                    if isinstance(result, str):
+                        # If result is a string, treat it as an error
+                        self.success = False
+                        self.data = {}
+                        self.error = {"code": "STRING_RESPONSE_ERROR", "message": result}
+                    elif isinstance(result, dict):
+                        # Normal case where result is a dict
+                        self.success = result.get("success", False)
+                        # Keep the full result dict so callers can access .get('task') or .get('tasks')
+                        self.data = result if self.success else {}
+                        self.error = result.get("error", {}) if not self.success else None
+                    else:
+                        # Handle case where result is neither string nor dict (e.g., list, number, etc.)
+                        self.success = False
+                        self.data = {}
+                        self.error = {"code": "INVALID_RESPONSE_TYPE", "message": f"Unexpected response type: {type(result).__name__}"}
+
+            return ToolResponse(result)
         except Exception as e:
             # Create an error response
             class ErrorResponse:
@@ -471,11 +577,11 @@ class CohereChatbotAgent:
             Dictionary mapping tool names to descriptions
         """
         return {
-            "create_task": "Create a new task with title, description, and optional due date",
-            "list_tasks": "Retrieve tasks (filtering disabled in Phase III)",  # DISABLED (Phase III): Filtering is disabled to comply with the Stateless System Rule. Deferred to Phase V.
-            "update_task": "Update an existing task with new values",
-            "delete_task": "Delete an existing task",
-            "complete_task": "Toggle the completion status of a task"
+            "create_task": "Create a new task with title, description, and optional due date via MCP server",
+            "list_tasks": "Retrieve tasks via MCP server (filtering disabled in Phase III)",  # DISABLED (Phase III): Filtering is disabled to comply with the Stateless System Rule. Deferred to Phase V.
+            "update_task": "Update an existing task with new values via MCP server",
+            "delete_task": "Delete an existing task via MCP server",
+            "complete_task": "Toggle the completion status of a task via MCP server"
         }
 
 

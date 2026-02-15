@@ -1,5 +1,6 @@
 // API service utilities for authenticated requests
 import authClient from './auth';
+import tokenService from './auth-service';
 import { Task } from '@/types/task';
 import { LoginResponse } from '@/types/auth';
 
@@ -8,6 +9,12 @@ class ApiService {
 
   constructor() {
     this.baseURL = process.env.BACKEND_API_URL || 'http://localhost:8000/api';
+  }
+
+  // Get user ID from the stored token
+  private getUserId(): string | null {
+    const token = authClient.getToken();
+    return tokenService.getUserIdFromToken(token);
   }
 
   // Helper method to make authenticated requests
@@ -52,33 +59,43 @@ class ApiService {
     }
   }
 
-  // Task-related API methods
+  // Task-related API methods using /api/{user_id}/tasks pattern
   async getTasks(): Promise<Task[]> {
-    return this.makeRequest<Task[]>('/tasks/'); // Add trailing slash to match backend route exactly
+    const userId = this.getUserId();
+    if (!userId) throw new Error('User not authenticated');
+    return this.makeRequest<Task[]>(`/${userId}/tasks`);
   }
 
   async createTask(taskData: Omit<Task, 'id' | 'created_at' | 'completed_at'>): Promise<Task> {
-    return this.makeRequest<Task>('/tasks/', { // Add trailing slash to match backend route exactly
+    const userId = this.getUserId();
+    if (!userId) throw new Error('User not authenticated');
+    return this.makeRequest<Task>(`/${userId}/tasks`, {
       method: 'POST',
       body: JSON.stringify(taskData),
     });
   }
 
   async updateTask(taskId: string, taskData: Partial<Omit<Task, 'id' | 'created_at' | 'completed_at'>>): Promise<Task> {
-    return this.makeRequest<Task>(`/tasks/${taskId}`, {
+    const userId = this.getUserId();
+    if (!userId) throw new Error('User not authenticated');
+    return this.makeRequest<Task>(`/${userId}/tasks/${taskId}`, {
       method: 'PUT',
       body: JSON.stringify(taskData),
     });
   }
 
   async deleteTask(taskId: string): Promise<void> {
-    await this.makeRequest(`/tasks/${taskId}`, {
+    const userId = this.getUserId();
+    if (!userId) throw new Error('User not authenticated');
+    await this.makeRequest(`/${userId}/tasks/${taskId}`, {
       method: 'DELETE',
     });
   }
 
   async toggleTaskCompletion(taskId: string): Promise<Task> {
-    return this.makeRequest<Task>(`/tasks/${taskId}/complete`, {
+    const userId = this.getUserId();
+    if (!userId) throw new Error('User not authenticated');
+    return this.makeRequest<Task>(`/${userId}/tasks/${taskId}/complete`, {
       method: 'PATCH',
     });
   }
@@ -91,10 +108,10 @@ class ApiService {
     });
   }
 
-  async register(email: string, password: string): Promise<{ message: string }> {
+  async register(email: string, password: string, name: string): Promise<{ message: string }> {
     return this.makeRequest<{ message: string }>('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, name }),
     });
   }
 }

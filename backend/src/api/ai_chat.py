@@ -27,8 +27,9 @@ class ChatResponse(BaseModel):
     user_id: Optional[str] = None
 
 
-@router.post("/api/ai/chat", response_model=ChatResponse)
+@router.post("/{user_id}/chat", response_model=ChatResponse)
 async def chat_endpoint(
+    user_id: str,
     request: ChatRequest,
     current_user: dict = Depends(get_current_user)
 ):
@@ -36,14 +37,20 @@ async def chat_endpoint(
     Chat endpoint that processes natural language requests and maps to MCP tools.
 
     Args:
+        user_id: User ID from URL path
         request: Chat request containing the user message
         current_user: Authenticated user from JWT token
 
     Returns:
         ChatResponse with the AI-generated response
     """
-    # Extract user ID and raw token from current user context (same as tasks endpoint but with token for tools)
-    user_id = current_user.get("sub")
+    # Verify JWT user matches URL user_id
+    jwt_user_id = current_user.get("sub")
+    if str(jwt_user_id) != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to access this user's chat"
+        )
     token = current_user.get("raw_token", "")
     username = current_user.get("username", current_user.get("email", "unknown"))
 
@@ -111,21 +118,27 @@ async def chat_endpoint(
         )
 
 
-@router.get("/api/ai/chat/tools")
-async def get_available_tools(current_user: dict = Depends(get_current_user)):
+@router.get("/{user_id}/chat/tools")
+async def get_available_tools(
+    user_id: str,
+    current_user: dict = Depends(get_current_user)
+):
     """
     Get list of available tools for the AI agent.
 
     Args:
+        user_id: User ID from URL path
         current_user: Authenticated user from JWT token
 
     Returns:
         Dictionary of available tools
     """
-    # Extract user ID and raw token from current user context (same as tasks endpoint but with token for tools)
-    user_id = current_user.get("sub")
-    token = current_user.get("raw_token", "")
-    username = current_user.get("username", current_user.get("email", "unknown"))
+    jwt_user_id = current_user.get("sub")
+    if str(jwt_user_id) != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized"
+        )
 
     security_logger.log_auth_attempt(user_id, True)
 

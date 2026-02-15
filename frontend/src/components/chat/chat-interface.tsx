@@ -45,9 +45,9 @@ export default function ChatInterface({ userId, token, onTaskUpdate }: ChatInter
       // Add debug log
       console.log('Chat request sending with auth header:', token ? 'present' : 'absent');
 
-      // Send request to backend AI chatbot endpoint
+      // Send request to backend AI chatbot endpoint using /api/{user_id}/chat pattern
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL || process.env.BACKEND_API_URL || 'http://localhost:8000/api';
-      const response = await fetch(`${backendUrl}/ai/chat`, {
+      const response = await fetch(`${backendUrl}/${userId}/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

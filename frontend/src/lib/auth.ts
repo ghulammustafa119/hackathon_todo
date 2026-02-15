@@ -1,214 +1,221 @@
-// Better Auth client integration
-// This file sets up the auth client for the frontend
-import { LoginResponse } from '@/types/auth';
+// Better Auth client integration with backend API fallback
+// Uses Better Auth for session management when configured,
+// falls back to backend API for authentication
+import { createAuthClient } from "better-auth/react";
+import { jwtClient } from "better-auth/client/plugins";
 
-interface LoginCredentials {
-  email: string;
-  password: string;
-}
+// Create Better Auth client (used when Better Auth is fully configured)
+export const authClient = createAuthClient({
+  baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL || "http://localhost:3000",
+  plugins: [jwtClient()],
+});
 
-interface RegisterData {
-  email: string;
-  password: string;
-}
-
-interface LoginResult {
-  success: boolean;
-  user?: { email: string };
-  error?: string;
-}
-
-interface LogoutResult {
-  success: boolean;
-}
-
-interface RegisterResult {
-  success: boolean;
-  user?: any;
-  error?: string;
-}
-
-class AuthClient {
-  private baseURL: string;
+// Auth wrapper that uses backend API for login/register
+// and supports Better Auth when fully configured
+class AuthClientWrapper {
   private token: string | null;
+  private backendURL: string;
 
   constructor() {
-    this.baseURL = process.env.BETTER_AUTH_URL || 'http://localhost:8000/api/auth';
     this.token = null;
+    this.backendURL =
+      process.env.NEXT_PUBLIC_BACKEND_API_URL ||
+      process.env.BACKEND_API_URL ||
+      "http://localhost:8000/api";
+    this.init();
   }
 
-  // Initialize auth state from localStorage or cookies
   async init() {
-    const storedToken = typeof window !== 'undefined'
-      ? localStorage.getItem('auth_token')
-      : null;
-
-    if (storedToken) {
-      this.token = storedToken;
-
-      // If token exists in localStorage but not in cookies, sync it
-      if (typeof window !== 'undefined') {
-        await fetch('/api/auth/token', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ token: storedToken }),
-        });
-      }
+    if (typeof window !== "undefined") {
+      this.token = localStorage.getItem("auth_token");
     }
   }
 
   // Login user
-  async login(credentials: LoginCredentials): Promise<LoginResult> {
+  async login(credentials: {
+    email: string;
+    password: string;
+  }): Promise<{ success: boolean; user?: any; error?: string }> {
+    // Try Better Auth first
     try {
-      const response = await fetch(`${this.baseURL}/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const result = await authClient.signIn.email({
+        email: credentials.email,
+        password: credentials.password,
+      });
+
+      if (!result.error && result.data) {
+        // Better Auth login succeeded, get JWT token for backend
+        const tokenResult = await authClient.token();
+        if (tokenResult.data?.token) {
+          this.token = tokenResult.data.token;
+          if (typeof window !== "undefined") {
+            localStorage.setItem("auth_token", this.token);
+            await fetch("/api/auth/token", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token: this.token }),
+            }).catch(() => {});
+          }
+        }
+        return { success: true, user: { email: credentials.email } };
+      }
+    } catch {
+      // Better Auth not available, fall through to backend API
+    }
+
+    // Fallback: Use backend API directly
+    try {
+      const response = await fetch(`${this.backendURL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(credentials),
       });
 
       if (response.ok) {
-        const data: LoginResponse = await response.json();
-        this.token = data.token; // Backend now returns token in the expected format
+        const data = await response.json();
+        this.token = data.token;
 
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('auth_token', this.token);
-
-          // Also set the token in a cookie for middleware access
-          await fetch('/api/auth/token', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
+        if (typeof window !== "undefined" && this.token) {
+          localStorage.setItem("auth_token", this.token);
+          await fetch("/api/auth/token", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ token: this.token }),
-          });
+          }).catch(() => {});
         }
 
-        return { success: true, user: { email: credentials.email } }; // Return minimal user data
+        return { success: true, user: data.user || { email: credentials.email } };
       } else {
-        const error = await response.json();
-        return { success: false, error: error.detail || error.message }; // Backend returns detail field
+        const error = await response.json().catch(() => ({}));
+        return {
+          success: false,
+          error: error.detail || error.message || "Login failed",
+        };
       }
     } catch (error: any) {
-      return { success: false, error: error.message };
-    }
-  }
-
-  // Logout user
-  async logout(): Promise<LogoutResult> {
-    try {
-      // Call the logout endpoint (optional, since we just clear the token client-side)
-      await fetch(`${this.baseURL}/logout`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.token}`,
-          'Content-Type': 'application/json',
-        },
-      }).catch(() => {}); // Ignore logout endpoint errors, just clear local state
-
-      this.token = null;
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('auth_token');
-
-        // Also clear the token cookie
-        await fetch('/api/auth/token', {
-          method: 'DELETE',
-        });
-      }
-
-      return { success: true };
-    } catch (error: any) {
-      // Even if there's an error, clear the local token
-      this.token = null;
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('auth_token');
-
-        // Also clear the token cookie
-        await fetch('/api/auth/token', {
-          method: 'DELETE',
-        });
-      }
-
-      return { success: true }; // Still return success to allow UI transition
+      return { success: false, error: error.message || "Login failed" };
     }
   }
 
   // Register user
-  async register(userData: RegisterData): Promise<RegisterResult> {
+  async register(userData: {
+    email: string;
+    password: string;
+    name: string;
+  }): Promise<{ success: boolean; user?: any; error?: string }> {
+    // Try Better Auth first
     try {
-      const response = await fetch(`${this.baseURL}/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const result = await authClient.signUp.email({
+        email: userData.email,
+        password: userData.password,
+        name: userData.name,
+      });
+
+      if (!result.error && result.data) {
+        return { success: true, user: result.data };
+      }
+    } catch {
+      // Better Auth not available, fall through to backend API
+    }
+
+    // Fallback: Use backend API directly
+    try {
+      const response = await fetch(`${this.backendURL}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(userData),
       });
 
       if (response.ok) {
         const data = await response.json();
-        // Note: Registration doesn't automatically log in user in our backend
-        // So we don't set the token here
         return { success: true, user: data };
       } else {
-        const error = await response.json();
-        return { success: false, error: error.detail || error.message };
+        const error = await response.json().catch(() => ({}));
+        return {
+          success: false,
+          error: error.detail || error.message || "Registration failed",
+        };
       }
     } catch (error: any) {
-      return { success: false, error: error.message };
+      return { success: false, error: error.message || "Registration failed" };
     }
+  }
+
+  // Logout user
+  async logout(): Promise<{ success: boolean }> {
+    try {
+      await authClient.signOut();
+    } catch {
+      // Ignore Better Auth signout errors
+    }
+
+    // Also call backend logout
+    try {
+      await fetch(`${this.backendURL}/auth/logout`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          "Content-Type": "application/json",
+        },
+      }).catch(() => {});
+    } catch {
+      // Ignore errors
+    }
+
+    this.token = null;
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("auth_token");
+      await fetch("/api/auth/token", { method: "DELETE" }).catch(() => {});
+    }
+    return { success: true };
   }
 
   // Get current user
   async getCurrentUser() {
-    if (!this.token) {
-      return null;
+    if (!this.token) return null;
+
+    // Try Better Auth session first
+    try {
+      const session = await authClient.getSession();
+      if (session.data?.user) {
+        return { ...session.data.user, isAuthenticated: true };
+      }
+    } catch {
+      // Fall through to backend
     }
 
+    // Fallback: verify via backend
     try {
-      const response = await fetch(`${this.baseURL}/user`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${this.token}`,
-        },
+      const response = await fetch(`${this.backendURL}/auth/user`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${this.token}` },
       });
 
       if (response.ok) {
         const userData = await response.json();
-        // Add the token to the user data for consistency
         return { ...userData, isAuthenticated: true };
       } else {
-        // Token might be expired, clear it
         this.token = null;
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('auth_token');
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("auth_token");
         }
         return null;
       }
-    } catch (error) {
+    } catch {
       return null;
     }
   }
 
-  // Check if user is authenticated
   isAuthenticated() {
     return !!this.token;
   }
 
-  // Get auth token
   getToken() {
     return this.token;
   }
 }
 
-// Create a singleton instance
-const authClient = new AuthClient();
+// Create singleton instance
+const authClientWrapper = new AuthClientWrapper();
 
-// Note: Since init is now async, consumers should await the authClient to be ready
-// Or call init() manually when needed
-// For now, we'll call it without awaiting, but components using auth should be aware
-authClient.init().catch(console.error);
-
-export default authClient;
+export default authClientWrapper;

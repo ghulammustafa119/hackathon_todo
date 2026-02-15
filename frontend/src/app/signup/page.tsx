@@ -3,16 +3,17 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import apiService from '@/lib/api';
+import authClient from '@/lib/auth';
 
 interface FormData {
   email: string;
   password: string;
   confirmPassword: string;
+  name: string;
 }
 
 export default function SignupPage() {
-  const [formData, setFormData] = useState<FormData>({ email: '', password: '', confirmPassword: '' });
+  const [formData, setFormData] = useState<FormData>({ email: '', password: '', confirmPassword: '', name: '' });
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [success, setSuccess] = useState<boolean>(false);
@@ -37,7 +38,17 @@ export default function SignupPage() {
     setSuccess(false);
 
     try {
-      await apiService.register(formData.email, formData.password);
+      // Use Better Auth for registration
+      const result = await authClient.register({
+        email: formData.email,
+        password: formData.password,
+        name: formData.name || formData.email.split('@')[0],
+      });
+
+      if (!result.success) {
+        setError(result.error || 'Registration failed');
+        return;
+      }
 
       setSuccess(true);
 
@@ -100,6 +111,20 @@ export default function SignupPage() {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
+              <label htmlFor="name" className="sr-only">Full Name</label>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                autoComplete="name"
+                required
+                value={formData.name}
+                onChange={handleChange}
+                className="appearance-none rounded-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                placeholder="Full Name"
+              />
+            </div>
+            <div>
               <label htmlFor="email" className="sr-only">Email address</label>
               <input
                 id="email"
@@ -109,7 +134,7 @@ export default function SignupPage() {
                 required
                 value={formData.email}
                 onChange={handleChange}
-                className="appearance-none rounded-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                className="appearance-none rounded-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Email address"
               />
             </div>

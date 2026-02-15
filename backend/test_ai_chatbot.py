@@ -74,11 +74,8 @@ def test_task_completion_requirement():
     """Test that all major components are implemented."""
     # Check that required modules exist
     import src.ai_chatbot.agents.cohere_agent
-    import src.ai_chatbot.tools.create_task_tool
-    import src.ai_chatbot.tools.list_tasks_tool
-    import src.ai_chatbot.tools.update_task_tool
-    import src.ai_chatbot.tools.delete_task_tool
-    import src.ai_chatbot.tools.complete_task_tool
+    import src.mcp_server.todo_mcp_server
+    import src.mcp_server.mcp_client
     import src.ai_chatbot.services.api_client
     import src.ai_chatbot.utils.jwt_handler
     import src.ai_chatbot.utils.validation

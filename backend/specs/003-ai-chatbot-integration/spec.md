@@ -14,7 +14,9 @@ This specification complies with the Todo Evolution Project – Spec Constitutio
 - All persistent state (tasks, conversation context) MUST reside in the database
 - Agents MUST NOT access the database directly
 - Agents MUST NOT contain business logic
-- All task mutations MUST occur via MCP tools calling Phase II APIs
+- All task mutations MUST occur via Official MCP SDK tools calling Phase II APIs
+- MCP Server MUST be implemented using the Official MCP SDK
+- MCP Client-Side communication MUST follow the standard MCP protocol
 
 ## 2. User Scenarios & Testing
 
@@ -47,7 +49,19 @@ This specification complies with the Todo Evolution Project – Spec Constitutio
 
 ## 3. Functional Requirements
 
-### 3.1 AI Chat Interface Requirements
+### 3.1 MCP Server Requirements
+
+**REQ-MCP-001: Official MCP SDK Implementation**
+- The system SHALL implement an MCP server using the Official MCP SDK
+- The system SHALL register all task operation tools with the MCP server
+- The system SHALL follow the standard MCP protocol for tool communication
+
+**REQ-MCP-002: Task Operation Tools**
+- The system SHALL expose create_task, list_tasks, update_task, delete_task, and complete_task operations as MCP tools
+- Each tool SHALL accept proper authentication tokens for user validation
+- Each tool SHALL operate within the authenticated user's scope only
+
+### 3.2 AI Chat Interface Requirements
 
 **REQ-AI-001: Natural Language Processing**
 - The system SHALL accept natural language input from users
@@ -67,7 +81,7 @@ This specification complies with the Todo Evolution Project – Spec Constitutio
 **REQ-AI-004: User Interface** [NEEDS CLARIFICATION: Should this be web-based or CLI interface?]
 - The system SHALL provide either a web-based chat interface or CLI interface for user interaction
 
-### 3.2 Agent Architecture Requirements
+### 3.3 Agent Architecture Requirements
 
 **REQ-AGENT-001: OpenAI Agents SDK Integration**
 - The system SHALL utilize OpenAI Agents SDK for AI processing
@@ -77,10 +91,10 @@ This specification complies with the Todo Evolution Project – Spec Constitutio
 **REQ-AGENT-002: Intent Detection**
 - The agent SHALL accurately classify user intents (create, read, update, delete, complete)
 - The agent SHALL extract relevant parameters from user input
-- The agent SHALL map intents to appropriate MCP tool calls
+- The agent SHALL map intents to appropriate Official MCP tool calls
 
 **REQ-AGENT-003: Tool Orchestration**
-- The agent SHALL coordinate multiple MCP tool calls when needed
+- The agent SHALL coordinate multiple MCP tool calls when needed via the Official MCP SDK
 - The agent SHALL handle tool call failures gracefully
 - The agent SHALL aggregate tool responses for natural language output
 
