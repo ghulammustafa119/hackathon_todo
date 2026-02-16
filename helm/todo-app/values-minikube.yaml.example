@@ -1,0 +1,24 @@
+# Minikube-specific values override
+# Copy this file to values-minikube.yaml and fill in your actual secrets
+# DO NOT commit values-minikube.yaml to git!
+
+backend:
+  image: todo-backend
+  tag: latest
+  replicas: 1
+  imagePullPolicy: Never  # Use locally built images
+
+frontend:
+  image: todo-frontend
+  tag: latest
+  replicas: 1
+  imagePullPolicy: Never  # Use locally built images
+
+secrets:
+  databaseUrl: "postgresql://user:password@host/dbname?sslmode=require"
+  secretKey: "your-jwt-secret-key-here"
+  cohereApiKey: "your-cohere-api-key-here"
+  betterAuthSecret: "your-better-auth-secret-here"
+
+config:
+  cohereModel: "command-nightly"

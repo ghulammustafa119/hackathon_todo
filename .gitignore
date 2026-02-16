@@ -99,6 +99,9 @@ runtime/
 *.local
 config/
 
+# Helm secrets (contains real credentials)
+helm/todo-app/values-minikube.yaml
+
 # Browser extensions
 *.tmp
 *.temp

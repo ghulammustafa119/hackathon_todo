@@ -1,0 +1,27 @@
+Thank you for installing {{ .Chart.Name }}!
+
+Your Todo Chatbot application has been deployed.
+
+To access the application:
+
+1. Get the frontend URL:
+{{- if .Values.ingress.enabled }}
+   Visit: http://{{ (index .Values.ingress.hosts 0).host }}
+{{- else }}
+   Run: minikube service {{ include "todo-app.fullname" . }}-frontend -n {{ .Release.Namespace }}
+   Or:  kubectl port-forward svc/{{ include "todo-app.fullname" . }}-frontend {{ .Values.frontend.port }}:{{ .Values.frontend.port }} -n {{ .Release.Namespace }}
+{{- end }}
+
+2. Check pod status:
+   kubectl get pods -n {{ .Release.Namespace }} -l "app.kubernetes.io/instance={{ .Release.Name }}"
+
+3. Check backend health:
+   kubectl port-forward svc/{{ include "todo-app.fullname" . }}-backend {{ .Values.backend.port }}:{{ .Values.backend.port }} -n {{ .Release.Namespace }}
+   Then visit: http://localhost:{{ .Values.backend.port }}/health
+
+4. View logs:
+   kubectl logs -f deployment/{{ include "todo-app.fullname" . }}-backend -n {{ .Release.Namespace }}
+   kubectl logs -f deployment/{{ include "todo-app.fullname" . }}-frontend -n {{ .Release.Namespace }}
+
+5. Scale the application:
+   helm upgrade {{ .Release.Name }} ./helm/todo-app --set backend.replicas=2 -n {{ .Release.Namespace }}

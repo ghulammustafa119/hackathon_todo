@@ -1,0 +1,51 @@
+# Default values for todo-app Helm chart
+
+backend:
+  image: todo-backend
+  tag: latest
+  replicas: 1
+  port: 8000
+  imagePullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+frontend:
+  image: todo-frontend
+  tag: latest
+  replicas: 1
+  port: 3000
+  imagePullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+ingress:
+  enabled: false
+  className: nginx
+  hosts:
+    - host: todo.local
+      paths:
+        - path: /
+          pathType: Prefix
+          service: frontend
+        - path: /api
+          pathType: Prefix
+          service: backend
+
+secrets:
+  databaseUrl: ""
+  secretKey: ""
+  cohereApiKey: ""
+  betterAuthSecret: ""
+
+config:
+  cohereModel: "command-nightly"

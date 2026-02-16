@@ -14,7 +14,7 @@ This project implements a Todo List Manager that evolves through 5 phases, from 
 | I | In-Memory Console Application | ✅ Complete |
 | II | Full-Stack Web Application with Authentication | ✅ Complete |
 | III | AI Chatbot Integration (Stateless) | ✅ Complete |
-| IV | Kubernetes Deployment | Planned |
+| IV | Local Kubernetes Deployment (Docker, Minikube, Helm) | ✅ Complete |
 | V | Cloud-Native with Event-Driven Architecture | Planned |
 
 ## Phase I - In-Memory Console Todo App
@@ -211,9 +211,94 @@ frontend/src/components/chat/
 - **delete_task**: Delete owned task
 - **complete_task**: Toggle completion
 
-## Phase IV - Kubernetes Deployment (Planned)
+## Phase IV - Local Kubernetes Deployment
 
-Containerized deployment using Kubernetes with Helm charts for orchestration.
+Containerized deployment on local Minikube Kubernetes cluster with Helm charts for orchestration.
+
+### Features
+
+- Multi-stage Docker builds for both frontend and backend
+- Docker Compose for local multi-container testing
+- Helm charts for Kubernetes deployment (Deployments, Services, ConfigMaps, Secrets, Ingress)
+- Health check probes (liveness and readiness) for all deployments
+- Configurable replicas, resource limits, and environment variables via Helm values
+- Kubernetes Secrets for sensitive configuration management
+- AI-assisted Kubernetes operations with kubectl-ai and kagent
+
+### Architecture
+
+```
+Minikube Cluster
+├── Frontend Deployment (NodePort) ──▶ Frontend Service
+├── Backend Deployment (ClusterIP)  ──▶ Backend Service
+├── ConfigMaps (env vars)
+├── Secrets (DB URL, JWT key, API keys)
+└── Ingress (optional)
+         │
+         ▼
+   Neon PostgreSQL (External)
+```
+
+### Quick Start
+
+```bash
+# 1. Build Docker images
+docker-compose build
+
+# 2. Test locally with Docker Compose
+docker-compose up -d
+# Access: http://localhost:3000 (frontend), http://localhost:8000 (backend)
+
+# 3. Deploy to Minikube
+minikube start --driver=docker --cpus=2 --memory=4096
+eval $(minikube docker-env)
+docker build -t todo-backend:latest ./backend
+docker build -t todo-frontend:latest ./frontend
+
+# 4. Configure secrets
+cp helm/todo-app/values-minikube.yaml.example helm/todo-app/values-minikube.yaml
+# Edit values-minikube.yaml with your actual secrets
+
+# 5. Deploy with Helm
+kubectl create namespace todo-app
+helm install todo-app ./helm/todo-app -n todo-app -f helm/todo-app/values-minikube.yaml
+
+# 6. Access application
+minikube service todo-app-frontend -n todo-app
+```
+
+For detailed instructions, see [docs/k8s-setup.md](docs/k8s-setup.md).
+
+### Project Structure (Phase IV)
+
+```
+hackathon_todo/
+├── backend/
+│   ├── Dockerfile              # Multi-stage build for FastAPI
+│   └── .dockerignore
+├── frontend/
+│   ├── Dockerfile              # Multi-stage build for Next.js
+│   └── .dockerignore
+├── docker-compose.yml          # Local multi-container orchestration
+├── helm/
+│   └── todo-app/
+│       ├── Chart.yaml
+│       ├── values.yaml
+│       ├── values-minikube.yaml.example
+│       └── templates/
+│           ├── _helpers.tpl
+│           ├── backend-deployment.yaml
+│           ├── backend-service.yaml
+│           ├── backend-configmap.yaml
+│           ├── frontend-deployment.yaml
+│           ├── frontend-service.yaml
+│           ├── frontend-configmap.yaml
+│           ├── secrets.yaml
+│           ├── ingress.yaml
+│           └── NOTES.txt
+└── docs/
+    └── k8s-setup.md            # Detailed setup guide
+```
 
 ## Phase V - Cloud-Native with Event-Driven Architecture (Planned)
 
