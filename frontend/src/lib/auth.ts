@@ -20,7 +20,6 @@ class AuthClientWrapper {
     this.token = null;
     this.backendURL =
       process.env.NEXT_PUBLIC_BACKEND_API_URL ||
-      process.env.BACKEND_API_URL ||
       "http://localhost:8000/api";
     this.init();
   }
