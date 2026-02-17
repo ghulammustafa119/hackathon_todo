@@ -36,7 +36,8 @@ export default function DashboardPage({}: DashboardPageProps) {
           return;
         }
 
-        const response = await fetch('http://localhost:8000/api/auth/user', {
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:8000/api';
+        const response = await fetch(`${backendUrl}/auth/user`, {
           method: 'GET',
           headers: { 'Authorization': `Bearer ${token}` },
         });
