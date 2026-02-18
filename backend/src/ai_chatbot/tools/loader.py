@@ -6,6 +6,10 @@ from . import list_tasks_tool
 from . import update_task_tool
 from . import delete_task_tool
 from . import complete_task_tool
+from . import search_tasks_tool
+from . import set_priority_tool
+from . import add_tags_tool
+from . import set_due_date_tool
 
 def ensure_tools_loaded():
     """Function to ensure all tools are loaded."""

@@ -1,0 +1,62 @@
+# DOKS-specific overrides for DigitalOcean Kubernetes deployment
+
+backend:
+  image: registry.digitalocean.com/todo-registry/todo-backend
+  tag: latest
+  replicas: 2
+  imagePullPolicy: Always
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPU: 70
+
+frontend:
+  image: registry.digitalocean.com/todo-registry/todo-frontend
+  tag: latest
+  replicas: 2
+  imagePullPolicy: Always
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPU: 70
+
+reminder:
+  image:
+    repository: registry.digitalocean.com/todo-registry/todo-reminder
+    tag: latest
+
+recurrence:
+  image:
+    repository: registry.digitalocean.com/todo-registry/todo-recurrence
+    tag: latest
+
+audit:
+  image:
+    repository: registry.digitalocean.com/todo-registry/todo-audit
+    tag: latest
+
+dapr:
+  pubsub:
+    brokers: "redpanda.redpanda.svc.cluster.local:9093"
+
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: todo.yourdomain.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: frontend
+        - path: /api
+          pathType: Prefix
+          service: backend
+
+# Secrets should be provided via --set or external secret manager
+# secrets:
+#   databaseUrl: "postgresql://..."
+#   secretKey: "..."
+#   cohereApiKey: "..."
+#   betterAuthSecret: "..."

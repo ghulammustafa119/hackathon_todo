@@ -5,6 +5,8 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import TaskForm from '@/components/tasks/task-form';
 import TaskUpdateForm from '@/components/tasks/task-update-form';
+import TaskFilters, { FilterState } from '@/components/tasks/task-filters';
+import NotificationBell from '@/components/tasks/notification-bell';
 import ChatInterface from '@/components/chat/chat-interface';
 import apiService from '@/lib/api';
 import LogoutButton from '@/components/auth/logout';
@@ -19,6 +21,7 @@ export default function DashboardPage({}: DashboardPageProps) {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [showTaskList, setShowTaskList] = useState<boolean>(false);
   const [showChat, setShowChat] = useState<boolean>(false);
+  const [activeFilters, setActiveFilters] = useState<FilterState>({});
   const [userInfo, setUserInfo] = useState<{ userId: string | null; token: string | null }>({
     userId: null,
     token: null
@@ -62,12 +65,20 @@ export default function DashboardPage({}: DashboardPageProps) {
   }, []);
 
   // Fetch tasks after auth
-  const fetchTasks = useCallback(async () => {
+  const fetchTasks = useCallback(async (filters?: FilterState) => {
     if (!isAuthenticated) return;
 
     try {
       setLoading(true);
-      const tasksData = await apiService.getTasks();
+      const filterParams: Record<string, string> = {};
+      const f = filters || activeFilters;
+      if (f.priority) filterParams.priority = f.priority;
+      if (f.status) filterParams.status = f.status;
+      if (f.tag) filterParams.tag = f.tag;
+      if (f.search) filterParams.search = f.search;
+      if (f.sort_by) filterParams.sort_by = f.sort_by;
+      if (f.sort_order) filterParams.sort_order = f.sort_order;
+      const tasksData = await apiService.getTasks(Object.keys(filterParams).length > 0 ? filterParams : undefined);
       setTasks(tasksData);
     } catch (error) {
       console.error('Error fetching tasks:', error);
@@ -77,7 +88,7 @@ export default function DashboardPage({}: DashboardPageProps) {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, activeFilters]);
 
   useEffect(() => {
     if (authChecked && isAuthenticated) {
@@ -126,6 +137,11 @@ export default function DashboardPage({}: DashboardPageProps) {
     }
   };
 
+  const handleFilterChange = (filters: FilterState) => {
+    setActiveFilters(filters);
+    fetchTasks(filters);
+  };
+
   const handleViewTaskList = async () => {
     if (showTaskList) {
       setShowTaskList(false);
@@ -160,6 +176,7 @@ export default function DashboardPage({}: DashboardPageProps) {
                 <h1 className="text-2xl font-bold text-gray-900 truncate">Todo Dashboard</h1>
               </div>
               <div className="flex items-center space-x-3">
+                <NotificationBell />
                 <button
                   onClick={() => setShowChat(!showChat)}
                   className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors duration-200"
@@ -230,6 +247,9 @@ export default function DashboardPage({}: DashboardPageProps) {
                 {/* Task Form */}
                 {showForm && <TaskForm onTaskCreated={handleTaskCreated} onCancel={() => setShowForm(false)} />}
 
+                {/* Filters */}
+                {showTaskList && <TaskFilters onFilterChange={handleFilterChange} />}
+
                 {/* Task List / Recent Task */}
                 <div>
                   {loading ? (
@@ -259,6 +279,13 @@ export default function DashboardPage({}: DashboardPageProps) {
                                 <span className={`ml-4 text-lg font-medium ${task.completed ? 'line-through text-gray-500' : 'text-gray-800'}`}>
                                   {task.title}
                                 </span>
+                                {task.priority && task.priority !== 'medium' && (
+                                  <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${
+                                    task.priority === 'urgent' ? 'bg-red-100 text-red-700' :
+                                    task.priority === 'high' ? 'bg-orange-100 text-orange-700' :
+                                    'bg-gray-100 text-gray-700'
+                                  }`}>{task.priority}</span>
+                                )}
                               </div>
                               <div className="flex items-center space-x-3">
                                 {task.description && (

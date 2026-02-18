@@ -14,6 +14,10 @@ spec:
     metadata:
       labels:
         {{- include "todo-app.backendSelectorLabels" . | nindent 8 }}
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "todo-backend"
+        dapr.io/app-port: "{{ .Values.backend.port }}"
     spec:
       containers:
         - name: backend

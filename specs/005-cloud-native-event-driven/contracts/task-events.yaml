@@ -1,0 +1,64 @@
+# Task Event Schema (CloudEvents v1.0 compatible)
+# Published to Dapr pub/sub component "taskevents" on topic "tasks"
+
+TaskEvent:
+  specversion: "1.0"
+  type: "task.created | task.updated | task.deleted | task.completed"
+  source: "/todo-backend"
+  id: "<uuid>"  # Unique event ID
+  time: "<ISO8601>"
+  datacontenttype: "application/json"
+  data:
+    event_type: "task.created"  # Same as CloudEvents type
+    schema_version: 1
+    task_id: "<uuid>"
+    user_id: "<uuid>"
+    payload:
+      id: "<uuid>"
+      title: "string"
+      description: "string | null"
+      priority: "high | medium | low"
+      tags: ["string"]
+      due_date: "ISO8601 | null"
+      reminder_lead_time: 60  # minutes
+      recurrence_rule: "daily | weekly | monthly | cron-expr | null"
+      recurrence_parent_id: "uuid | null"
+      completed: false
+      completed_at: "ISO8601 | null"
+      created_at: "ISO8601"
+      updated_at: "ISO8601"
+    previous_state: "TaskPayload | null"  # For updates, contains pre-update state
+    timestamp: "ISO8601"
+
+# Event Types:
+# - task.created:   payload = new task, previous_state = null
+# - task.updated:   payload = new task state, previous_state = old task state
+# - task.deleted:   payload = deleted task state, previous_state = null
+# - task.completed: payload = completed task state, previous_state = pre-completion state
+
+# Command Events (published by Recurrence Service):
+RecurrenceCommandEvent:
+  topic: "task-commands"
+  data:
+    command_type: "task.create.requested"
+    source_service: "recurrence-service"
+    task_data:
+      title: "string"
+      description: "string | null"
+      priority: "high | medium | low"
+      tags: ["string"]
+      due_date: "ISO8601"
+      recurrence_rule: "string"
+      recurrence_parent_id: "uuid"
+      user_id: "uuid"
+
+# Notification Events (published by Reminder Service):
+ReminderNotificationEvent:
+  topic: "notifications"
+  data:
+    notification_type: "reminder.fired"
+    task_id: "uuid"
+    user_id: "uuid"
+    task_title: "string"
+    due_date: "ISO8601"
+    timestamp: "ISO8601"

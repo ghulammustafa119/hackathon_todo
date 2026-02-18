@@ -45,6 +45,60 @@ services:
       - todo-network
     restart: unless-stopped
 
+  # Phase V: Event-driven microservices
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v24.1.1
+    container_name: redpanda
+    command:
+      - redpanda start
+      - --smp 1
+      - --memory 512M
+      - --overprovisioned
+      - --kafka-addr internal://0.0.0.0:9092
+      - --advertise-kafka-addr internal://redpanda:9092
+    ports:
+      - "9092:9092"
+    networks:
+      - todo-network
+
+  reminder:
+    build:
+      context: ./services/reminder
+    container_name: todo-reminder
+    ports:
+      - "8001:8001"
+    depends_on:
+      - redpanda
+    networks:
+      - todo-network
+    restart: unless-stopped
+
+  recurrence:
+    build:
+      context: ./services/recurrence
+    container_name: todo-recurrence
+    ports:
+      - "8002:8002"
+    depends_on:
+      - redpanda
+    networks:
+      - todo-network
+    restart: unless-stopped
+
+  audit:
+    build:
+      context: ./services/audit
+    container_name: todo-audit
+    ports:
+      - "8003:8003"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+    depends_on:
+      - redpanda
+    networks:
+      - todo-network
+    restart: unless-stopped
+
 networks:
   todo-network:
     driver: bridge

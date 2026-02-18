@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "todo-app.fullname" . }}-reminder
+  labels:
+    app.kubernetes.io/component: reminder
+spec:
+  replicas: {{ .Values.reminder.replicas | default 1 }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: reminder
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: reminder
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "reminder-service"
+        dapr.io/app-port: "8001"
+    spec:
+      containers:
+        - name: reminder
+          image: "{{ .Values.reminder.image.repository }}:{{ .Values.reminder.image.tag | default .Chart.AppVersion }}"
+          ports:
+            - containerPort: 8001
+          resources:
+            requests:
+              cpu: {{ .Values.reminder.resources.requests.cpu | default "100m" }}
+              memory: {{ .Values.reminder.resources.requests.memory | default "128Mi" }}
+            limits:
+              cpu: {{ .Values.reminder.resources.limits.cpu | default "250m" }}
+              memory: {{ .Values.reminder.resources.limits.memory | default "256Mi" }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "todo-app.fullname" . }}-reminder
+spec:
+  selector:
+    app.kubernetes.io/component: reminder
+  ports:
+    - port: 8001
+      targetPort: 8001
