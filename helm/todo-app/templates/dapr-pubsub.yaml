@@ -1,0 +1,15 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: taskevents
+  namespace: {{ .Release.Namespace }}
+spec:
+  type: pubsub.kafka
+  version: v1
+  metadata:
+    - name: brokers
+      value: {{ .Values.dapr.pubsub.brokers | default "redpanda.default.svc.cluster.local:9092" }}
+    - name: authType
+      value: "none"
+    - name: consumerGroup
+      value: {{ .Values.dapr.pubsub.consumerGroup | default "todo-group" }}

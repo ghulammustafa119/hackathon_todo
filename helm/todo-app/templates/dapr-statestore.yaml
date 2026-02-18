@@ -1,0 +1,16 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: statestore
+  namespace: {{ .Release.Namespace }}
+spec:
+  type: state.postgresql
+  version: v1
+  metadata:
+    - name: connectionString
+      valueFrom:
+        secretKeyRef:
+          name: {{ include "todo-app.fullname" . }}-secrets
+          key: database-url
+    - name: tableName
+      value: {{ .Values.dapr.statestore.tableName | default "dapr_state" }}

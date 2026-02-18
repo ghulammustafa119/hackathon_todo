@@ -8,13 +8,17 @@ from src.database.session import engine
 from src.models.user import User
 from src.models.task import Task
 from src.models.conversation import ConversationMessage, ConversationHistory
+from src.models.event import TaskEvent, OutboxEvent
+from src.models.tag import Tag, TaskTag
+from src.models.audit import AuditEntry
+from src.models.reminder import ReminderSchedule
 
 def create_tables():
     """Create all database tables"""
     print("Creating database tables...")
     SQLModel.metadata.create_all(engine)
     print("Tables created successfully!")
-    print("Database initialized with User and Task tables.")
+    print("Database initialized with all Phase V tables.")
 
 if __name__ == "__main__":
     create_tables()

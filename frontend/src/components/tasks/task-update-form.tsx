@@ -9,20 +9,51 @@ interface TaskUpdateFormProps {
   onCancel: () => void;
 }
 
+const PRIORITY_OPTIONS = ['low', 'medium', 'high', 'urgent'] as const;
 
 export default function TaskUpdateForm({ task, onUpdateTask, onCancel }: TaskUpdateFormProps) {
-  const [title, setTitle] = useState<string>(task?.title || '');
-  const [description, setDescription] = useState<string>(task?.description || '');
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string>('');
+  const [title, setTitle] = useState(task?.title || '');
+  const [description, setDescription] = useState(task?.description || '');
+  const [priority, setPriority] = useState(task?.priority || 'medium');
+  const [tagInput, setTagInput] = useState('');
+  const [tags, setTags] = useState<string[]>(task?.tags || []);
+  const [dueDate, setDueDate] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  // Update state when task prop changes
   useEffect(() => {
     if (task) {
       setTitle(task.title);
       setDescription(task.description || '');
+      setPriority(task.priority || 'medium');
+      setTags(task.tags || []);
+      if (task.due_date) {
+        const d = new Date(task.due_date);
+        setDueDate(d.toISOString().slice(0, 16));
+      } else {
+        setDueDate('');
+      }
     }
   }, [task]);
+
+  const addTag = () => {
+    const tag = tagInput.trim();
+    if (tag && !tags.includes(tag)) {
+      setTags([...tags, tag]);
+      setTagInput('');
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setTags(tags.filter(t => t !== tagToRemove));
+  };
+
+  const handleTagKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      addTag();
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +63,10 @@ export default function TaskUpdateForm({ task, onUpdateTask, onCancel }: TaskUpd
     try {
       const updatedTask: Partial<Task> = {
         title,
-        ...(description ? { description } : {}),
+        priority,
+        tags,
+        ...(description ? { description } : { description: '' }),
+        ...(dueDate ? { due_date: new Date(dueDate).toISOString() } : {}),
       };
 
       await onUpdateTask(task.id, updatedTask);
@@ -53,16 +87,12 @@ export default function TaskUpdateForm({ task, onUpdateTask, onCancel }: TaskUpd
       </h3>
 
       {error && (
-        <div className="mb-3 p-2 bg-red-100 text-red-700 rounded">
-          {error}
-        </div>
+        <div className="mb-3 p-2 bg-red-100 text-red-700 rounded">{error}</div>
       )}
 
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
-          <label htmlFor="update-title" className="block text-sm font-medium text-gray-700 mb-2">
-            Title *
-          </label>
+          <label htmlFor="update-title" className="block text-sm font-medium text-gray-700 mb-2">Title *</label>
           <input
             type="text"
             id="update-title"
@@ -75,9 +105,7 @@ export default function TaskUpdateForm({ task, onUpdateTask, onCancel }: TaskUpd
         </div>
 
         <div className="mb-4">
-          <label htmlFor="update-description" className="block text-sm font-medium text-gray-700 mb-2">
-            Description
-          </label>
+          <label htmlFor="update-description" className="block text-sm font-medium text-gray-700 mb-2">Description</label>
           <textarea
             id="update-description"
             value={description}
@@ -88,21 +116,62 @@ export default function TaskUpdateForm({ task, onUpdateTask, onCancel }: TaskUpd
           />
         </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label htmlFor="update-priority" className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+            <select
+              id="update-priority"
+              value={priority}
+              onChange={(e) => setPriority(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            >
+              {PRIORITY_OPTIONS.map(p => (
+                <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="update-dueDate" className="block text-sm font-medium text-gray-700 mb-2">Due Date</label>
+            <input
+              type="datetime-local"
+              id="update-dueDate"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            />
+          </div>
+        </div>
+
+        <div className="mb-4">
+          <label htmlFor="update-tags" className="block text-sm font-medium text-gray-700 mb-2">Tags</label>
+          <div className="flex flex-wrap gap-2 mb-2">
+            {tags.map(tag => (
+              <span key={tag} className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-700">
+                {tag}
+                <button type="button" onClick={() => removeTag(tag)} className="ml-1 text-blue-500 hover:text-blue-700">&times;</button>
+              </span>
+            ))}
+          </div>
+          <input
+            type="text"
+            id="update-tags"
+            value={tagInput}
+            onChange={(e) => setTagInput(e.target.value)}
+            onKeyDown={handleTagKeyDown}
+            onBlur={addTag}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            placeholder="Type a tag and press Enter"
+          />
+        </div>
+
         <div className="flex space-x-3">
           <button
             type="submit"
             disabled={loading}
             className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-all duration-200"
           >
-            {loading ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Updating...
-              </>
-            ) : 'Update Task'}
+            {loading ? 'Updating...' : 'Update Task'}
           </button>
 
           <button

@@ -60,10 +60,19 @@ class ApiService {
   }
 
   // Task-related API methods using /api/{user_id}/tasks pattern
-  async getTasks(): Promise<Task[]> {
+  async getTasks(filters?: Record<string, string>): Promise<Task[]> {
     const userId = this.getUserId();
     if (!userId) throw new Error('User not authenticated');
-    return this.makeRequest<Task[]>(`/${userId}/tasks`);
+    let endpoint = `/${userId}/tasks`;
+    if (filters) {
+      const params = new URLSearchParams();
+      for (const [key, value] of Object.entries(filters)) {
+        if (value) params.append(key, value);
+      }
+      const qs = params.toString();
+      if (qs) endpoint += `?${qs}`;
+    }
+    return this.makeRequest<Task[]>(endpoint);
   }
 
   async createTask(taskData: Omit<Task, 'id' | 'created_at' | 'completed_at'>): Promise<Task> {

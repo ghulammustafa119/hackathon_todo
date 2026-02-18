@@ -13,6 +13,11 @@ backend:
     limits:
       cpu: 500m
       memory: 512Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPU: 70
 
 frontend:
   image: todo-frontend
@@ -27,6 +32,59 @@ frontend:
     limits:
       cpu: 500m
       memory: 512Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPU: 70
+
+# Phase V microservices
+reminder:
+  replicas: 1
+  image:
+    repository: todo-reminder
+    tag: latest
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+recurrence:
+  replicas: 1
+  image:
+    repository: todo-recurrence
+    tag: latest
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+audit:
+  replicas: 1
+  image:
+    repository: todo-audit
+    tag: latest
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+# Dapr configuration
+dapr:
+  pubsub:
+    brokers: "redpanda.default.svc.cluster.local:9092"
+    consumerGroup: "todo-group"
+  statestore:
+    tableName: "dapr_state"
 
 ingress:
   enabled: false
