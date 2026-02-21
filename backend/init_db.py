@@ -27,13 +27,8 @@ def migrate_task_table():
     ]
     with engine.connect() as conn:
         for col_name, col_type in columns:
-            try:
-                conn.execute(text(f"ALTER TABLE task ADD COLUMN {col_name} {col_type}"))
-                print(f"  Added column: task.{col_name}")
-            except Exception:
-                # Column already exists, skip
-                conn.rollback()
-                continue
+            conn.execute(text(f"ALTER TABLE task ADD COLUMN IF NOT EXISTS {col_name} {col_type}"))
+            print(f"  Ensured column: task.{col_name}")
         conn.commit()
 
 
