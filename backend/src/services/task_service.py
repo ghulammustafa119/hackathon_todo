@@ -58,8 +58,10 @@ class TaskService:
                 }),
             )
             self.session.add(outbox_event)
+            self.session.commit()
             logger.info(f"Event {event_type} emitted for task {task.id}")
         except Exception as e:
+            self.session.rollback()
             logger.warning(f"Failed to emit event {event_type}: {e}")
 
     def create_task(self, task_data: TaskCreate, user_id: str) -> Task:
