@@ -31,16 +31,17 @@ COPY --from=builder /install /usr/local
 # Copy application source code
 COPY src/ ./src/
 COPY main.py ./
+COPY init_db.py ./
 
 # Set Python path so imports work correctly
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
 
-# Expose the API port
-EXPOSE 8000
+# Expose the API port (HF Spaces requires 7860)
+EXPOSE 7860
 
 # Switch to non-root user
 USER appuser
 
-# Run the FastAPI server
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run init_db then start the FastAPI server on port 7860
+CMD ["sh", "-c", "python init_db.py && uvicorn src.main:app --host 0.0.0.0 --port 7860"]
