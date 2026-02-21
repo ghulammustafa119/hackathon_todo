@@ -1,5 +1,10 @@
-// Better Auth API route handler for Next.js App Router
-import { auth } from "@/lib/auth-server";
-import { toNextJsHandler } from "better-auth/next-js";
+// Auth API catch-all route - returns 404 as auth is handled by backend API directly
+import { NextResponse } from "next/server";
 
-export const { GET, POST } = toNextJsHandler(auth);
+export async function GET() {
+  return NextResponse.json({ error: "Auth is handled by backend API" }, { status: 404 });
+}
+
+export async function POST() {
+  return NextResponse.json({ error: "Auth is handled by backend API" }, { status: 404 });
+}
