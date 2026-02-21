@@ -31,7 +31,8 @@ allowed_origins = [
     "http://localhost:7860",
     "http://localhost:8000",
     "http://0.0.0.0:7860",
-    "http://0.0.0.0:8000"
+    "http://0.0.0.0:8000",
+    "https://hackathon-todo-beryl.vercel.app",
 ]
 
 # Add Hugging Face domain pattern for production
@@ -41,6 +42,11 @@ if hf_space_pattern:
 else:
     # Add generic pattern for Hugging Face Spaces
     allowed_origins.append("https://*.hf.space")
+
+# Add any additional frontend URLs from environment
+frontend_url = os.getenv("FRONTEND_URL")
+if frontend_url:
+    allowed_origins.append(frontend_url.strip())
 
 app.add_middleware(
     CORSMiddleware,
