@@ -25,10 +25,23 @@ def migrate_task_table():
         ("recurrence_parent_id", "VARCHAR"),
         ("completed_at", "TIMESTAMP"),
     ]
+    migrations = {
+        "task": columns,
+        "conversationhistory": [
+            ("message_count", "INTEGER DEFAULT 0"),
+            ("timeout_minutes", "INTEGER DEFAULT 30"),
+        ],
+        "conversationmessage": [
+            ("task_references", "TEXT"),
+            ("token_count", "INTEGER"),
+            ("tool_calls", "TEXT"),
+        ],
+    }
     with engine.connect() as conn:
-        for col_name, col_type in columns:
-            conn.execute(text(f"ALTER TABLE task ADD COLUMN IF NOT EXISTS {col_name} {col_type}"))
-            print(f"  Ensured column: task.{col_name}")
+        for table, cols in migrations.items():
+            for col_name, col_type in cols:
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {col_name} {col_type}"))
+                print(f"  Ensured column: {table}.{col_name}")
         conn.commit()
 
 
