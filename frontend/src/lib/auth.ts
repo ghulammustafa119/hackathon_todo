@@ -10,6 +10,18 @@ export const authClient = createAuthClient({
   plugins: [jwtClient()],
 });
 
+// Extract a string error message from FastAPI error responses
+// FastAPI returns detail as string or array of {type, loc, msg, input, ctx}
+function extractErrorMessage(error: any, fallback: string): string {
+  if (!error) return fallback;
+  if (typeof error.detail === "string") return error.detail;
+  if (Array.isArray(error.detail) && error.detail.length > 0) {
+    return error.detail.map((e: any) => e.msg || e.message).join(". ");
+  }
+  if (typeof error.message === "string") return error.message;
+  return fallback;
+}
+
 // Auth wrapper that uses backend API for login/register
 // and supports Better Auth when fully configured
 class AuthClientWrapper {
@@ -88,7 +100,7 @@ class AuthClientWrapper {
         const error = await response.json().catch(() => ({}));
         return {
           success: false,
-          error: error.detail || error.message || "Login failed",
+          error: extractErrorMessage(error, "Login failed"),
         };
       }
     } catch (error: any) {
@@ -132,7 +144,7 @@ class AuthClientWrapper {
         const error = await response.json().catch(() => ({}));
         return {
           success: false,
-          error: error.detail || error.message || "Registration failed",
+          error: extractErrorMessage(error, "Registration failed"),
         };
       }
     } catch (error: any) {
