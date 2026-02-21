@@ -26,7 +26,7 @@ class AgentConfig(BaseSettings):
     tool_rate_limit_window: int = int(os.getenv("TOOL_RATE_LIMIT_WINDOW", "60"))  # seconds
 
     # Database Configuration (needed to avoid validation error)
-    database_url: str = os.getenv("DATABASE_URL", "sqlite:///./todo_app.db")
+    database_url: str = os.getenv("DATABASE_URL", "sqlite:///./todo_app.db").strip()
 
     # Better Auth Configuration
     better_auth_secret: str = os.getenv("BETTER_AUTH_SECRET", "")

@@ -14,7 +14,7 @@ ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 
 # Database Configuration
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./todo_app.db")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./todo_app.db").strip()
 
 # Backend API Configuration
 BACKEND_API_URL = os.getenv("BACKEND_API_URL", "http://localhost:8000/api")
