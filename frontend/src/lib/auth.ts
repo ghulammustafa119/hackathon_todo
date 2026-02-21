@@ -1,5 +1,17 @@
-// Auth client that uses backend API directly for authentication
+// Better Auth client integration with backend API fallback
+// Uses Better Auth for session management when configured,
+// falls back to backend API for authentication
+import { createAuthClient } from "better-auth/react";
+import { jwtClient } from "better-auth/client/plugins";
 
+// Create Better Auth client (used when Better Auth is fully configured)
+export const authClient = createAuthClient({
+  baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL || (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"),
+  plugins: [jwtClient()],
+});
+
+// Auth wrapper that uses backend API for login/register
+// and supports Better Auth when fully configured
 class AuthClientWrapper {
   private token: string | null;
   private backendURL: string;
@@ -23,6 +35,34 @@ class AuthClientWrapper {
     email: string;
     password: string;
   }): Promise<{ success: boolean; user?: any; error?: string }> {
+    // Try Better Auth first
+    try {
+      const result = await authClient.signIn.email({
+        email: credentials.email,
+        password: credentials.password,
+      });
+
+      if (!result.error && result.data) {
+        // Better Auth login succeeded, get JWT token for backend
+        const tokenResult = await authClient.token();
+        if (tokenResult.data?.token) {
+          this.token = tokenResult.data.token;
+          if (typeof window !== "undefined") {
+            localStorage.setItem("auth_token", this.token);
+            await fetch("/api/auth/token", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token: this.token }),
+            }).catch(() => {});
+          }
+        }
+        return { success: true, user: { email: credentials.email } };
+      }
+    } catch {
+      // Better Auth not available, fall through to backend API
+    }
+
+    // Fallback: Use backend API directly
     try {
       const response = await fetch(`${this.backendURL}/auth/login`, {
         method: "POST",
@@ -62,6 +102,22 @@ class AuthClientWrapper {
     password: string;
     name: string;
   }): Promise<{ success: boolean; user?: any; error?: string }> {
+    // Try Better Auth first
+    try {
+      const result = await authClient.signUp.email({
+        email: userData.email,
+        password: userData.password,
+        name: userData.name,
+      });
+
+      if (!result.error && result.data) {
+        return { success: true, user: result.data };
+      }
+    } catch {
+      // Better Auth not available, fall through to backend API
+    }
+
+    // Fallback: Use backend API directly
     try {
       const response = await fetch(`${this.backendURL}/auth/register`, {
         method: "POST",
@@ -87,6 +143,13 @@ class AuthClientWrapper {
   // Logout user
   async logout(): Promise<{ success: boolean }> {
     try {
+      await authClient.signOut();
+    } catch {
+      // Ignore Better Auth signout errors
+    }
+
+    // Also call backend logout
+    try {
       await fetch(`${this.backendURL}/auth/logout`, {
         method: "POST",
         headers: {
@@ -110,6 +173,17 @@ class AuthClientWrapper {
   async getCurrentUser() {
     if (!this.token) return null;
 
+    // Try Better Auth session first
+    try {
+      const session = await authClient.getSession();
+      if (session.data?.user) {
+        return { ...session.data.user, isAuthenticated: true };
+      }
+    } catch {
+      // Fall through to backend
+    }
+
+    // Fallback: verify via backend
     try {
       const response = await fetch(`${this.backendURL}/auth/user`, {
         method: "GET",
