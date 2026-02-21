@@ -46,7 +46,8 @@ export default function SignupPage() {
       });
 
       if (!result.success) {
-        setError(result.error || 'Registration failed');
+        const msg = typeof result.error === 'string' ? result.error : JSON.stringify(result.error) || 'Registration failed';
+        setError(msg);
         return;
       }
 
@@ -57,7 +58,7 @@ export default function SignupPage() {
         router.push('/login');
       }, 2000);
     } catch (err: any) {
-      setError(err.message || 'Registration failed');
+      setError(typeof err.message === 'string' ? err.message : 'Registration failed');
     } finally {
       setLoading(false);
     }

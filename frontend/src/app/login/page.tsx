@@ -34,7 +34,8 @@ export default function LoginPage() {
       });
 
       if (!result.success) {
-        setError(result.error || 'Login failed');
+        const msg = typeof result.error === 'string' ? result.error : JSON.stringify(result.error) || 'Login failed';
+        setError(msg);
         return;
       }
 
@@ -42,7 +43,7 @@ export default function LoginPage() {
       router.push('/dashboard');
       router.refresh();
     } catch (err: any) {
-      setError(err.message || 'Login failed');
+      setError(typeof err.message === 'string' ? err.message : 'Login failed');
     } finally {
       setLoading(false);
     }
