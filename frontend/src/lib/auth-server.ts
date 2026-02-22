@@ -4,10 +4,25 @@ import { betterAuth } from "better-auth";
 import { jwt } from "better-auth/plugins";
 import { Pool } from "pg";
 
+// Validate required environment variables at startup
+if (!process.env.DATABASE_URL) {
+  console.error(
+    "FATAL: DATABASE_URL is not set. Better Auth cannot connect to the database. " +
+    "Set DATABASE_URL in your environment variables (Vercel dashboard for production)."
+  );
+}
+
+if (!process.env.BETTER_AUTH_SECRET) {
+  console.error(
+    "FATAL: BETTER_AUTH_SECRET is not set. Better Auth cannot sign sessions. " +
+    "Set BETTER_AUTH_SECRET in your environment variables (Vercel dashboard for production)."
+  );
+}
+
 export const auth = betterAuth({
   database: new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false },
+    ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : undefined,
   }),
   emailAndPassword: {
     enabled: true,
@@ -26,5 +41,5 @@ export const auth = betterAuth({
     updateAge: 60 * 60 * 24, // 1 day
   },
   secret: process.env.BETTER_AUTH_SECRET,
-  baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
+  baseURL: process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_BETTER_AUTH_URL || "http://localhost:3000",
 });
