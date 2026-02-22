@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, Request
 from fastapi.security import OAuth2PasswordBearer
 from typing import Optional
 from sqlmodel import Session, select
@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from passlib.context import CryptContext
 from src.models.user import User
 from src.database import get_session
+from src.api.security import check_auth_rate_limit
 import re
 
 # Security setup
@@ -130,7 +131,7 @@ def create_refresh_token(data: dict):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-@router.post("/register", response_model=UserResponse)
+@router.post("/register", response_model=UserResponse, dependencies=[Depends(check_auth_rate_limit)])
 def register_user(user_data: UserRegister, session: Session = Depends(get_session)):
     # Validate email format
     if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', user_data.email):
@@ -168,7 +169,7 @@ def register_user(user_data: UserRegister, session: Session = Depends(get_sessio
         created_at=db_user.created_at
     )
 
-@router.post("/login", response_model=LoginResponse)
+@router.post("/login", response_model=LoginResponse, dependencies=[Depends(check_auth_rate_limit)])
 def login_user(user_credentials: UserLogin, session: Session = Depends(get_session)):
     # Find user by email with normalized email
     user = session.exec(select(User).where(User.email == user_credentials.email.lower())).first()

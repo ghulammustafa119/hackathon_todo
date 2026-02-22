@@ -8,6 +8,7 @@ from src.api.auth import router as auth_router
 from src.api.ai_chat import router as ai_chat_router
 from src.api.tags import router as tags_router
 from src.api.notifications import router as notifications_router
+from src.api.security import SecurityHeadersMiddleware
 from src.database.session import engine
 # Import all models so SQLModel.metadata knows about them
 from src.models import (  # noqa: F401
@@ -48,6 +49,9 @@ frontend_url = os.getenv("FRONTEND_URL")
 if frontend_url:
     allowed_origins.append(frontend_url.strip())
 
+# Security headers on every response
+app.add_middleware(SecurityHeadersMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
@@ -66,6 +70,18 @@ app.include_router(notifications_router, prefix="/api", tags=["notifications"])
 @app.on_event("startup")
 def on_startup():
     """Create all database tables on startup (safe for existing tables)."""
+    import logging
+    logger = logging.getLogger("backend")
+
+    # Warn loudly if no JWT secret is configured
+    secret = os.getenv("BETTER_AUTH_SECRET") or os.getenv("JWT_SECRET_KEY")
+    if not secret:
+        logger.critical(
+            "*** WARNING: No BETTER_AUTH_SECRET or JWT_SECRET_KEY set! ***\n"
+            "JWT verification will use an insecure default. "
+            "Set BETTER_AUTH_SECRET in your environment variables."
+        )
+
     SQLModel.metadata.create_all(engine)
 
 

@@ -36,7 +36,8 @@ export default function DashboardPage({}: DashboardPageProps) {
       try {
         const user = await authClient.getCurrentUser();
         if (user && user.isAuthenticated) {
-          const token = authClient.getToken();
+          // Get token async (from httpOnly cookie)
+          const token = await authClient.getTokenAsync();
           setUserInfo({ userId: user.id, token });
           setIsAuthenticated(true);
         } else {
