@@ -9,18 +9,10 @@ export default function LogoutButton() {
   const handleLogout = async () => {
     try {
       await authClient.logout();
-
-      // Also clear the token cookie
-      await fetch('/api/auth/token', {
-        method: 'DELETE',
-      });
-
-      // Redirect to login page after logout
       router.push('/login');
       router.refresh();
     } catch (error) {
       console.error('Logout error:', error);
-      // Even if logout fails, clear local state and redirect
       router.push('/login');
       router.refresh();
     }

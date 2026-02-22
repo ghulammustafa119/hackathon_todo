@@ -2,7 +2,8 @@
 import authClient from './auth';
 import tokenService from './auth-service';
 import { Task } from '@/types/task';
-import { LoginResponse } from '@/types/auth';
+import { extractErrorMessage } from './error-utils';
+
 
 class ApiService {
   private baseURL: string;
@@ -49,7 +50,7 @@ class ApiService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+        throw new Error(extractErrorMessage(errorData) || `HTTP error! status: ${response.status}`);
       }
 
       return await response.json();
@@ -109,20 +110,6 @@ class ApiService {
     });
   }
 
-  // Auth-related API methods
-  async login(email: string, password: string): Promise<LoginResponse> {
-    return this.makeRequest<LoginResponse>('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
-  }
-
-  async register(email: string, password: string, name: string): Promise<{ message: string }> {
-    return this.makeRequest<{ message: string }>('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify({ email, password, name }),
-    });
-  }
 }
 
 // Create a singleton instance
