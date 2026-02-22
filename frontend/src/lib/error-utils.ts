@@ -3,7 +3,7 @@
  * Handles: FastAPI validation errors, Better Auth errors, plain strings, Error objects.
  */
 export function extractErrorMessage(error: any): string {
-  if (!error) return "Something went wrong";
+  if (!error) return "Unexpected error occurred. Please try again.";
 
   // Already a string
   if (typeof error === "string") return error;
@@ -31,5 +31,5 @@ export function extractErrorMessage(error: any): string {
       .join(", ");
   }
 
-  return "Something went wrong";
+  return "Unexpected error occurred. Please try again.";
 }
