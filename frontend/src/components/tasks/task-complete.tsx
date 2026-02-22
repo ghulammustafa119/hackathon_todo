@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Task } from '@/types/task';
+import { extractErrorMessage } from '@/lib/error-utils';
 
 interface TaskCompleteToggleProps {
   task: Task;
@@ -19,7 +20,7 @@ export default function TaskCompleteToggle({ task, onToggleCompletion }: TaskCom
     try {
       await onToggleCompletion(task.id);
     } catch (err: any) {
-      setError(err.message || 'Failed to update task completion status');
+      setError(extractErrorMessage(err));
     } finally {
       setLoading(false);
     }

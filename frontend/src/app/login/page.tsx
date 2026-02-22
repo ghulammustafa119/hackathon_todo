@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import authClient from '@/lib/auth';
+import { extractErrorMessage } from '@/lib/error-utils';
 
 interface FormData {
   email: string;
@@ -34,8 +35,7 @@ export default function LoginPage() {
       });
 
       if (!result.success) {
-        const msg = typeof result.error === 'string' ? result.error : JSON.stringify(result.error) || 'Login failed';
-        setError(msg);
+        setError(extractErrorMessage(result.error));
         return;
       }
 
@@ -43,7 +43,7 @@ export default function LoginPage() {
       router.push('/dashboard');
       router.refresh();
     } catch (err: any) {
-      setError(typeof err.message === 'string' ? err.message : 'Login failed');
+      setError(extractErrorMessage(err));
     } finally {
       setLoading(false);
     }

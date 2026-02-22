@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Task } from '@/types/task';
+import { extractErrorMessage } from '@/lib/error-utils';
 
 interface TaskUpdateFormProps {
   task: Task;
@@ -71,7 +72,7 @@ export default function TaskUpdateForm({ task, onUpdateTask, onCancel }: TaskUpd
 
       await onUpdateTask(task.id, updatedTask);
     } catch (err: any) {
-      setError(err.message || 'Failed to update task');
+      setError(extractErrorMessage(err));
     } finally {
       setLoading(false);
     }

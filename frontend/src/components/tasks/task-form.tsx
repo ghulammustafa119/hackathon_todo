@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import apiService from '@/lib/api';
 import { Task } from '@/types/task';
+import { extractErrorMessage } from '@/lib/error-utils';
 
 interface TaskFormProps {
   onTaskCreated: (task: Task) => void;
@@ -67,7 +68,7 @@ export default function TaskForm({ onTaskCreated, onCancel }: TaskFormProps) {
       setDueDate('');
       setRecurrence('');
     } catch (err: any) {
-      setError(err.message || 'Failed to create task');
+      setError(extractErrorMessage(err));
     } finally {
       setLoading(false);
     }

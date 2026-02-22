@@ -3,24 +3,13 @@
 // falls back to backend API for authentication
 import { createAuthClient } from "better-auth/react";
 import { jwtClient } from "better-auth/client/plugins";
+import { extractErrorMessage } from "./error-utils";
 
 // Create Better Auth client (used when Better Auth is fully configured)
 export const authClient = createAuthClient({
   baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL || (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"),
   plugins: [jwtClient()],
 });
-
-// Extract a string error message from FastAPI error responses
-// FastAPI returns detail as string or array of {type, loc, msg, input, ctx}
-function extractErrorMessage(error: any, fallback: string): string {
-  if (!error) return fallback;
-  if (typeof error.detail === "string") return error.detail;
-  if (Array.isArray(error.detail) && error.detail.length > 0) {
-    return error.detail.map((e: any) => e.msg || e.message).join(". ");
-  }
-  if (typeof error.message === "string") return error.message;
-  return fallback;
-}
 
 // Auth wrapper that uses backend API for login/register
 // and supports Better Auth when fully configured
@@ -100,11 +89,11 @@ class AuthClientWrapper {
         const error = await response.json().catch(() => ({}));
         return {
           success: false,
-          error: extractErrorMessage(error, "Login failed"),
+          error: extractErrorMessage(error),
         };
       }
     } catch (error: any) {
-      return { success: false, error: error.message || "Login failed" };
+      return { success: false, error: extractErrorMessage(error) };
     }
   }
 
@@ -144,11 +133,11 @@ class AuthClientWrapper {
         const error = await response.json().catch(() => ({}));
         return {
           success: false,
-          error: extractErrorMessage(error, "Registration failed"),
+          error: extractErrorMessage(error),
         };
       }
     } catch (error: any) {
-      return { success: false, error: error.message || "Registration failed" };
+      return { success: false, error: extractErrorMessage(error) };
     }
   }
 

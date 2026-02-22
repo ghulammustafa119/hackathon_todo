@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import authClient from '@/lib/auth';
+import { extractErrorMessage } from '@/lib/error-utils';
 
 interface FormData {
   email: string;
@@ -46,8 +47,7 @@ export default function SignupPage() {
       });
 
       if (!result.success) {
-        const msg = typeof result.error === 'string' ? result.error : JSON.stringify(result.error) || 'Registration failed';
-        setError(msg);
+        setError(extractErrorMessage(result.error));
         return;
       }
 
@@ -58,7 +58,7 @@ export default function SignupPage() {
         router.push('/login');
       }, 2000);
     } catch (err: any) {
-      setError(typeof err.message === 'string' ? err.message : 'Registration failed');
+      setError(extractErrorMessage(err));
     } finally {
       setLoading(false);
     }
