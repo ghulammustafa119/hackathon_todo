@@ -16,6 +16,8 @@ export const auth = betterAuth({
     jwt({
       jwt: {
         expirationTime: "7d",
+        // Use HS256 so FastAPI can verify with the same secret
+        issuer: "better-auth",
       },
     }),
   ],

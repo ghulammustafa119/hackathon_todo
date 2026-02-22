@@ -15,8 +15,9 @@ import re
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 
-# JWT configuration
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-default-secret-key")  # In production, use a strong secret
+# JWT configuration - use BETTER_AUTH_SECRET as primary (same secret Better Auth signs with)
+_BETTER_AUTH_SECRET = os.getenv("BETTER_AUTH_SECRET", "")
+SECRET_KEY = _BETTER_AUTH_SECRET or os.getenv("JWT_SECRET_KEY", "your-default-secret-key")
 ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 

@@ -53,10 +53,11 @@ export default function SignupPage() {
 
       setSuccess(true);
 
-      // Automatically redirect after a delay
+      // Better Auth auto-logs-in after signup, redirect to dashboard
       setTimeout(() => {
-        router.push('/login');
-      }, 2000);
+        router.push('/dashboard');
+        router.refresh();
+      }, 1500);
     } catch (err: any) {
       setError(extractErrorMessage(err));
     } finally {
@@ -103,7 +104,7 @@ export default function SignupPage() {
               </div>
               <div className="ml-3">
                 <h3 className="text-sm font-medium text-green-800">Account created successfully!</h3>
-                <p className="mt-1 text-sm text-green-700">Redirecting to login...</p>
+                <p className="mt-1 text-sm text-green-700">Redirecting to dashboard...</p>
               </div>
             </div>
           </div>

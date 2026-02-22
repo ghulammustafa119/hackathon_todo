@@ -10,33 +10,25 @@ export function middleware(request: NextRequest) {
     currentPath === path || currentPath.startsWith(path + '/')
   );
 
-  // Get the auth token from cookies
-  const token = request.cookies.get('auth_token')?.value || null;
+  // Check for auth: Better Auth session cookie OR our JWT cookie
+  const betterAuthSession = request.cookies.get('better-auth.session_token')?.value;
+  const authToken = request.cookies.get('auth_token')?.value;
+  const hasAuth = !!betterAuthSession || !!authToken;
 
   // If it's a protected route and user is not authenticated
-  if (isProtectedPath && !token) {
-    // Redirect to login page
+  if (isProtectedPath && !hasAuth) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);
   }
 
-  // Allow the request to proceed
   return NextResponse.next();
 }
 
 // Define which paths the middleware should run on
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
-    // Specifically protect dashboard routes
     '/dashboard/:path*',
   ],
 };

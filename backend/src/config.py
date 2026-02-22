@@ -8,8 +8,12 @@ configuration values.
 
 import os
 
-# JWT Configuration (same as in auth.py)
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-default-secret-key")
+# JWT Configuration
+# BETTER_AUTH_SECRET is the primary secret (used by Better Auth to sign JWTs)
+# JWT_SECRET_KEY is the fallback for backwards compatibility
+BETTER_AUTH_SECRET = os.getenv("BETTER_AUTH_SECRET", "")
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-default-secret-key")
+SECRET_KEY = BETTER_AUTH_SECRET or JWT_SECRET_KEY
 ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 
@@ -20,7 +24,6 @@ DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./todo_app.db").strip()
 BACKEND_API_URL = os.getenv("BACKEND_API_URL", "http://localhost:8000/api")
 
 # Better Auth Configuration
-BETTER_AUTH_SECRET = os.getenv("BETTER_AUTH_SECRET", "")
 BETTER_AUTH_URL = os.getenv("BETTER_AUTH_URL", "http://localhost:3000")
 
 # Logging Configuration

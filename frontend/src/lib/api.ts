@@ -1,9 +1,9 @@
-// API service utilities for authenticated requests
+// API service utilities for authenticated requests to FastAPI backend
+// FastAPI is used ONLY for tasks/business logic - NOT for auth
 import authClient from './auth';
 import tokenService from './auth-service';
 import { Task } from '@/types/task';
 import { extractErrorMessage } from './error-utils';
-
 
 class ApiService {
   private baseURL: string;
@@ -12,17 +12,17 @@ class ApiService {
     this.baseURL = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:8000/api';
   }
 
-  // Get user ID from the stored token
+  // Get user ID by decoding the stored JWT token
   private getUserId(): string | null {
     const token = authClient.getToken();
     return tokenService.getUserIdFromToken(token);
   }
 
-  // Helper method to make authenticated requests
+  // Helper method to make authenticated requests to FastAPI
   async makeRequest<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
 
-    // Add authorization header if user is authenticated
+    // Get JWT token from Better Auth (stored in localStorage)
     const token = authClient.getToken();
     const headers = {
       'Content-Type': 'application/json',
@@ -41,9 +41,8 @@ class ApiService {
     try {
       const response = await fetch(url, config);
 
-      // Handle 401 Unauthorized responses
+      // Handle 401 Unauthorized - token expired or invalid
       if (response.status === 401) {
-        // Token might be expired, logout user
         await authClient.logout();
         throw new Error('Authentication required. Please log in again.');
       }
@@ -60,7 +59,7 @@ class ApiService {
     }
   }
 
-  // Task-related API methods using /api/{user_id}/tasks pattern
+  // Task CRUD methods using /api/{user_id}/tasks pattern
   async getTasks(filters?: Record<string, string>): Promise<Task[]> {
     const userId = this.getUserId();
     if (!userId) throw new Error('User not authenticated');
@@ -109,7 +108,6 @@ class ApiService {
       method: 'PATCH',
     });
   }
-
 }
 
 // Create a singleton instance

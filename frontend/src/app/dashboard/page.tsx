@@ -9,6 +9,7 @@ import TaskFilters, { FilterState } from '@/components/tasks/task-filters';
 import NotificationBell from '@/components/tasks/notification-bell';
 import ChatInterface from '@/components/chat/chat-interface';
 import apiService from '@/lib/api';
+import authClient from '@/lib/auth';
 import LogoutButton from '@/components/auth/logout';
 import { Task } from '@/types/task';
 
@@ -29,28 +30,16 @@ export default function DashboardPage({}: DashboardPageProps) {
   const [authChecked, setAuthChecked] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Check authentication
+  // Check authentication via Better Auth session
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const token = localStorage.getItem('auth_token');
-        if (!token) {
-          window.location.href = '/login';
-          return;
-        }
-
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:8000/api';
-        const response = await fetch(`${backendUrl}/auth/user`, {
-          method: 'GET',
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-
-        if (response.ok) {
-          const userData = await response.json();
-          setUserInfo({ userId: userData.id, token });
+        const user = await authClient.getCurrentUser();
+        if (user && user.isAuthenticated) {
+          const token = authClient.getToken();
+          setUserInfo({ userId: user.id, token });
           setIsAuthenticated(true);
         } else {
-          localStorage.removeItem('auth_token');
           window.location.href = '/login';
         }
       } catch (error) {
