@@ -49,7 +49,9 @@ A full-stack web application with persistent data storage and user authenticatio
 
 ### Features
 
-- User authentication via Better Auth with JWT tokens
+- User authentication via Better Auth (email/password signup & login)
+- Better Auth JWT plugin with EdDSA (Ed25519) token signing
+- Backend verifies tokens via JWKS endpoint (EdDSA) with HS256 fallback
 - User-scoped task access control
 - REST API with JSON data exchange
 - Responsive web interface using Next.js
@@ -58,8 +60,9 @@ A full-stack web application with persistent data storage and user authenticatio
 ### Architecture
 
 - **Backend**: FastAPI + SQLModel ORM + Neon PostgreSQL
-- **Frontend**: Next.js with authentication context
-- **Security**: JWT token verification per-request
+- **Frontend**: Next.js with Better Auth client + httpOnly cookie sessions
+- **Auth**: Better Auth (JWKS/EdDSA) → FastAPI JWT verification (PyJWT + python-jose fallback)
+- **Security**: httpOnly cookies, security headers middleware, CORS whitelist
 - **Stateless**: No server-side session storage
 
 ## Phase III - AI Chatbot Integration (Stateless)
@@ -68,11 +71,13 @@ Natural language interface for managing tasks using Cohere AI and MCP tools.
 
 ### Features
 
-- Natural language task CRUD via chat interface
+- Natural language task CRUD via chat interface (e.g., "buy a book", "show my tasks")
 - Cohere Agent for intent detection and tool orchestration
+- Keyword-based fallback when Cohere fails to return structured JSON
 - MCP tools: create_task, list_tasks, update_task, delete_task, complete_task
+- MCP server uses JWKS-aware token verification (EdDSA + HS256)
 - Numbered task reference support (e.g., "mark task 6 as done")
-- JWT token propagation: frontend -> agent -> backend
+- JWT token propagation: frontend -> agent -> MCP server -> backend
 
 ## Phase IV - Local Kubernetes Deployment
 
@@ -133,7 +138,7 @@ Advanced cloud-native architecture with Kafka event streaming, Dapr sidecars, an
 - Add/remove tags for task categorization
 - Filter tasks by priority, status, and tag
 - Sort tasks by date, priority, due date, or title
-- Full-text search across task titles and descriptions
+- Full-text search across task titles, descriptions, and tags
 - Priority badges and tag chips in the UI
 
 #### US2: Due Dates and Reminders
