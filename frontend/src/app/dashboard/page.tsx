@@ -8,6 +8,7 @@ import TaskUpdateForm from '@/components/tasks/task-update-form';
 import TaskFilters, { FilterState } from '@/components/tasks/task-filters';
 import NotificationBell from '@/components/tasks/notification-bell';
 import ChatInterface from '@/components/chat/chat-interface';
+import TaskAuditLog from '@/components/tasks/task-audit-log';
 import apiService from '@/lib/api';
 import authClient from '@/lib/auth';
 import LogoutButton from '@/components/auth/logout';
@@ -23,6 +24,7 @@ export default function DashboardPage({}: DashboardPageProps) {
   const [showTaskList, setShowTaskList] = useState<boolean>(false);
   const [showChat, setShowChat] = useState<boolean>(false);
   const [activeFilters, setActiveFilters] = useState<FilterState>({});
+  const [auditTaskId, setAuditTaskId] = useState<string | null>(null);
   const filtersRef = useRef<FilterState>({});
   const [userInfo, setUserInfo] = useState<{ userId: string | null; token: string | null }>({
     userId: null,
@@ -329,6 +331,9 @@ export default function DashboardPage({}: DashboardPageProps) {
                                     {task.description}
                                   </span>
                                 )}
+                                <button onClick={() => setAuditTaskId(task.id)} className="text-gray-500 hover:text-gray-700 p-1 rounded-md hover:bg-gray-100 transition-colors duration-200 flex-shrink-0" title="View history">
+                                  History
+                                </button>
                                 <button onClick={() => setEditingTask(task)} className="text-blue-600 hover:text-blue-800 p-1 rounded-md hover:bg-blue-50 transition-colors duration-200 flex-shrink-0" title="Edit task">
                                   Edit
                                 </button>
@@ -346,6 +351,11 @@ export default function DashboardPage({}: DashboardPageProps) {
               </div>
             </div>
           </main>
+
+          {/* Audit Log Modal */}
+          {auditTaskId && (
+            <TaskAuditLog taskId={auditTaskId} onClose={() => setAuditTaskId(null)} />
+          )}
         </div>
       )}
     </>
