@@ -137,13 +137,19 @@ class TaskService:
 
         tasks = self.session.exec(statement).all()
 
-        # Full-text search (filter in Python if no PostgreSQL or fallback)
+        # Full-text search (filter in Python — searches title, description, and tags)
         if search:
             search_lower = search.lower()
+            # Pre-fetch tags for all tasks to check in search
+            task_tags_map: dict = {}
+            for t in tasks:
+                task_tags_map[t.id] = self.get_task_tags(t.id)
+
             tasks = [
                 t for t in tasks
                 if search_lower in t.title.lower()
                 or (t.description and search_lower in t.description.lower())
+                or any(search_lower in tag.lower() for tag in task_tags_map.get(t.id, []))
             ]
 
         return tasks

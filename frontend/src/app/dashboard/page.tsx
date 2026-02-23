@@ -256,6 +256,11 @@ export default function DashboardPage({}: DashboardPageProps) {
                         Priority: {activeFilters.priority}
                       </span>
                     )}
+                    {activeFilters.tag && (
+                      <span className="px-2 py-0.5 bg-teal-100 text-teal-700 rounded-full text-xs font-medium">
+                        Tag: {activeFilters.tag}
+                      </span>
+                    )}
                     {activeFilters.search && (
                       <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">
                         Search: {activeFilters.search}

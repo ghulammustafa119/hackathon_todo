@@ -43,6 +43,18 @@ export default function TaskFilters({ onFilterChange }: TaskFiltersProps) {
     }
   };
 
+  const [tagInput, setTagInput] = useState('');
+
+  const handleTagSearch = () => {
+    updateFilter('tag', tagInput.trim());
+  };
+
+  const handleTagKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleTagSearch();
+    }
+  };
+
   return (
     <div className="mb-4 p-4 bg-gray-50 rounded-lg border">
       <div className="flex flex-wrap gap-3 items-end">
@@ -56,6 +68,19 @@ export default function TaskFilters({ onFilterChange }: TaskFiltersProps) {
             onBlur={handleSearch}
             placeholder="Search tasks..."
             className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-gray-500 mb-1">Tag</label>
+          <input
+            type="text"
+            value={tagInput}
+            onChange={(e) => setTagInput(e.target.value)}
+            onKeyDown={handleTagKeyDown}
+            onBlur={handleTagSearch}
+            placeholder="e.g. work"
+            className="w-24 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
           />
         </div>
 
