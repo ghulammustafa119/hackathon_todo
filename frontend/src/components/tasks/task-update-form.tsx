@@ -123,7 +123,7 @@ export default function TaskUpdateForm({ task, onUpdateTask, onCancel }: TaskUpd
             <select
               id="update-priority"
               value={priority}
-              onChange={(e) => setPriority(e.target.value)}
+              onChange={(e) => setPriority(e.target.value as typeof priority)}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
             >
               {PRIORITY_OPTIONS.map(p => (

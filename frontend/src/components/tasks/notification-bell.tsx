@@ -16,9 +16,7 @@ export default function NotificationBell() {
 
   const fetchNotifications = useCallback(async () => {
     try {
-      const data = await apiService.makeRequest<Notification[]>(
-        `/${apiService['getUserId']()}/notifications`
-      );
+      const data = await apiService.makeRequest<Notification[]>('/notifications');
       setNotifications(data.filter(n => n.status === 'sent'));
     } catch {
       // Silently fail - notifications are non-critical
@@ -34,7 +32,7 @@ export default function NotificationBell() {
   const markAsRead = async (id: string) => {
     try {
       await apiService.makeRequest(
-        `/${apiService['getUserId']()}/notifications/${id}/read`,
+        `/notifications/${id}/read`,
         { method: 'PATCH' }
       );
       setNotifications(prev => prev.filter(n => n.id !== id));
