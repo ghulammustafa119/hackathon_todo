@@ -425,13 +425,13 @@ class CohereChatbotAgent:
 
                     # If we went through all matches without finding a valid tool call
                     else:
-                        # If no tool call was identified, return the generated text as is
-                        final_response = cohere_response
-                        agent_logger.debug(f"No tool detected in response, returning as-is: {cohere_response[:200]}...")
+                        # Fallback: use keyword-based intent detection to build the tool call
+                        agent_logger.warning(f"No valid tool call in Cohere response, using keyword fallback for: {user_input[:100]}")
+                        final_response = await self._keyword_fallback(user_input, token, user_id)
                 else:
-                    # If no JSON found, return the generated text as is
-                    final_response = cohere_response
-                    agent_logger.debug(f"No JSON found in response, returning as-is: {cohere_response[:200]}...")
+                    # If no JSON found, use keyword-based fallback
+                    agent_logger.warning(f"No JSON in Cohere response, using keyword fallback for: {user_input[:100]}")
+                    final_response = await self._keyword_fallback(user_input, token, user_id)
 
             except json.JSONDecodeError as e:
                 # If JSON parsing fails, return an error
@@ -472,6 +472,82 @@ class CohereChatbotAgent:
             )
 
             return f"I encountered an error while processing your request: {str(e)}"
+
+    async def _keyword_fallback(
+        self,
+        user_input: str,
+        token: str,
+        user_id: Optional[str]
+    ) -> str:
+        """
+        Fallback when Cohere fails to return valid JSON tool calls.
+        Uses keyword-based intent detection and parameter extraction to
+        construct and execute the tool call directly.
+        """
+        from ..utils.nlp_utils import detect_intent, extract_task_parameters
+
+        intent = detect_intent(user_input)
+        agent_logger.info(f"Keyword fallback detected intent: {intent} for input: {user_input[:100]}")
+
+        if intent == "create_task":
+            params = extract_task_parameters(user_input)
+            title = params.get("title", "").strip()
+            if not title:
+                # Use the raw input as the title as a last resort
+                title = user_input.strip()
+            arguments = {"title": title}
+            if params.get("description"):
+                arguments["description"] = params["description"]
+            if params.get("due_date"):
+                arguments["due_date"] = params["due_date"]
+            return await self._handle_tool_execution_and_format_response(
+                "create_task", arguments, token, user_id
+            )
+
+        elif intent == "list_tasks":
+            return await self._handle_tool_execution_and_format_response(
+                "list_tasks", {}, token, user_id
+            )
+
+        elif intent == "complete_task":
+            # Extract task number if present
+            import re
+            number_match = re.search(r'(?:task|number|#)\s*(\d+)', user_input, re.IGNORECASE)
+            arguments = {"completed": True}
+            if number_match:
+                arguments["task_id"] = number_match.group(1)
+            return await self._handle_tool_execution_and_format_response(
+                "complete_task", arguments, token, user_id
+            )
+
+        elif intent == "delete_task":
+            import re
+            number_match = re.search(r'(?:task|number|#)\s*(\d+)', user_input, re.IGNORECASE)
+            arguments = {}
+            if number_match:
+                arguments["task_id"] = number_match.group(1)
+            return await self._handle_tool_execution_and_format_response(
+                "delete_task", arguments, token, user_id
+            )
+
+        elif intent == "update_task":
+            import re
+            number_match = re.search(r'(?:task|number|#)\s*(\d+)', user_input, re.IGNORECASE)
+            arguments = {}
+            if number_match:
+                arguments["task_id"] = number_match.group(1)
+            params = extract_task_parameters(user_input)
+            if params.get("title"):
+                arguments["title"] = params["title"]
+            if params.get("description"):
+                arguments["description"] = params["description"]
+            return await self._handle_tool_execution_and_format_response(
+                "update_task", arguments, token, user_id
+            )
+
+        else:
+            # Truly unknown intent - return a helpful message
+            return "I'm not sure what you'd like me to do. You can ask me to create, list, update, delete, or complete tasks."
 
     async def _execute_single_tool(
         self,
