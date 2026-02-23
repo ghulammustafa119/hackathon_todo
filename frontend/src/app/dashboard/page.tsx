@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import TaskForm from '@/components/tasks/task-form';
 import TaskUpdateForm from '@/components/tasks/task-update-form';
@@ -23,6 +23,7 @@ export default function DashboardPage({}: DashboardPageProps) {
   const [showTaskList, setShowTaskList] = useState<boolean>(false);
   const [showChat, setShowChat] = useState<boolean>(false);
   const [activeFilters, setActiveFilters] = useState<FilterState>({});
+  const filtersRef = useRef<FilterState>({});
   const [userInfo, setUserInfo] = useState<{ userId: string | null; token: string | null }>({
     userId: null,
     token: null
@@ -61,7 +62,7 @@ export default function DashboardPage({}: DashboardPageProps) {
     try {
       setLoading(true);
       const filterParams: Record<string, string> = {};
-      const f = filters || activeFilters;
+      const f = filters || filtersRef.current;
       if (f.priority) filterParams.priority = f.priority;
       if (f.status) filterParams.status = f.status;
       if (f.tag) filterParams.tag = f.tag;
@@ -78,7 +79,7 @@ export default function DashboardPage({}: DashboardPageProps) {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, activeFilters]);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (authChecked && isAuthenticated) {
@@ -128,6 +129,7 @@ export default function DashboardPage({}: DashboardPageProps) {
   };
 
   const handleFilterChange = (filters: FilterState) => {
+    filtersRef.current = filters;
     setActiveFilters(filters);
     fetchTasks(filters);
   };
@@ -240,6 +242,34 @@ export default function DashboardPage({}: DashboardPageProps) {
                 {/* Filters */}
                 {showTaskList && <TaskFilters onFilterChange={handleFilterChange} />}
 
+                {/* Active filter indicator */}
+                {showTaskList && Object.keys(activeFilters).length > 0 && (
+                  <div className="mb-3 flex items-center gap-2 text-sm text-gray-500">
+                    <span>Active filters:</span>
+                    {activeFilters.status && (
+                      <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                        Status: {activeFilters.status}
+                      </span>
+                    )}
+                    {activeFilters.priority && (
+                      <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-xs font-medium">
+                        Priority: {activeFilters.priority}
+                      </span>
+                    )}
+                    {activeFilters.search && (
+                      <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                        Search: {activeFilters.search}
+                      </span>
+                    )}
+                    {activeFilters.sort_by && activeFilters.sort_by !== 'created_at' && (
+                      <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
+                        Sort: {activeFilters.sort_by}
+                      </span>
+                    )}
+                    <span className="text-gray-400">({tasks.length} results)</span>
+                  </div>
+                )}
+
                 {/* Task List / Recent Task */}
                 <div>
                   {loading ? (
@@ -249,7 +279,18 @@ export default function DashboardPage({}: DashboardPageProps) {
                     </div>
                   ) : tasks.length === 0 ? (
                     <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-200">
-                      <p className="text-gray-600 text-lg">No tasks yet. Add your first task!</p>
+                      {Object.keys(activeFilters).length > 0 ? (
+                        <div>
+                          <p className="text-gray-600 text-lg">
+                            No {activeFilters.status === 'completed' ? 'completed' : activeFilters.status === 'pending' ? 'pending' : ''} tasks found
+                            {activeFilters.priority ? ` with ${activeFilters.priority} priority` : ''}
+                            {activeFilters.search ? ` matching "${activeFilters.search}"` : ''}
+                          </p>
+                          <p className="text-gray-400 text-sm mt-2">Try changing or clearing your filters</p>
+                        </div>
+                      ) : (
+                        <p className="text-gray-600 text-lg">No tasks yet. Add your first task!</p>
+                      )}
                     </div>
                   ) : (
                     <ul className="bg-white shadow-sm rounded-xl overflow-y-auto max-h-[60vh] border border-gray-200 divide-y divide-gray-100">
