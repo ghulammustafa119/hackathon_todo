@@ -20,6 +20,7 @@ async function preMigrationFixes() {
   try {
     // Add missing columns with defaults if they don't exist
     const fixes = [
+      // Add Better Auth columns if missing
       `ALTER TABLE "user" ADD COLUMN IF NOT EXISTS "emailVerified" BOOLEAN DEFAULT false`,
       `ALTER TABLE "user" ADD COLUMN IF NOT EXISTS "image" TEXT`,
       `ALTER TABLE "user" ADD COLUMN IF NOT EXISTS "createdAt" TIMESTAMP DEFAULT NOW()`,
@@ -28,6 +29,16 @@ async function preMigrationFixes() {
       `UPDATE "user" SET "emailVerified" = false WHERE "emailVerified" IS NULL`,
       `UPDATE "user" SET "createdAt" = NOW() WHERE "createdAt" IS NULL`,
       `UPDATE "user" SET "updatedAt" = NOW() WHERE "updatedAt" IS NULL`,
+      // Fix FastAPI snake_case columns that have NOT NULL without defaults:
+      // Better Auth inserts won't set these, so they need defaults
+      `ALTER TABLE "user" ALTER COLUMN "created_at" SET DEFAULT NOW()`,
+      `ALTER TABLE "user" ALTER COLUMN "updated_at" SET DEFAULT NOW()`,
+      `ALTER TABLE "user" ALTER COLUMN "is_active" SET DEFAULT true`,
+      // Also make FastAPI columns nullable or add defaults so Better Auth inserts succeed
+      `ALTER TABLE "user" ALTER COLUMN "created_at" DROP NOT NULL`,
+      `ALTER TABLE "user" ALTER COLUMN "updated_at" DROP NOT NULL`,
+      `ALTER TABLE "user" ALTER COLUMN "is_active" DROP NOT NULL`,
+      `ALTER TABLE "user" ALTER COLUMN "password" DROP NOT NULL`,
     ];
 
     for (const sql of fixes) {
