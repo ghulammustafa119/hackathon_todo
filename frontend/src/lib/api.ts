@@ -128,6 +128,20 @@ class ApiService {
       method: 'PATCH',
     });
   }
+
+  // --- Notifications ---
+
+  async getNotifications(): Promise<any[]> {
+    const userId = await this.requireUserId();
+    return this.makeRequest<any[]>(`/${userId}/notifications`);
+  }
+
+  async markNotificationRead(notificationId: string): Promise<void> {
+    const userId = await this.requireUserId();
+    await this.makeRequest(`/${userId}/notifications/${notificationId}/read`, {
+      method: 'PATCH',
+    });
+  }
 }
 
 const apiService = new ApiService();
