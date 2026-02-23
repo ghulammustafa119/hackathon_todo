@@ -1,54 +1,71 @@
 // Better Auth API route handler for Next.js App Router
-import { auth } from "@/lib/auth-server";
-import { toNextJsHandler } from "better-auth/next-js";
+import { NextRequest, NextResponse } from "next/server";
 
-const handler = toNextJsHandler(auth);
+/**
+ * Lazily import auth to catch initialization errors.
+ */
+async function getHandler() {
+  try {
+    const { auth } = await import("@/lib/auth-server");
+    const { toNextJsHandler } = await import("better-auth/next-js");
+    return toNextJsHandler(auth);
+  } catch (error: any) {
+    console.error("[Better Auth] Failed to initialize:", error);
+    throw error;
+  }
+}
 
 /**
  * Strip trailing slash from the request URL before passing to Better Auth.
  * next.config.js has trailingSlash: true, which appends "/" to all paths.
- * Better Auth's internal router does NOT match paths with trailing slashes
- * (e.g. /api/auth/sign-up/email/ → 404, but /api/auth/sign-up/email → 200).
+ * Better Auth's internal router does NOT match paths with trailing slashes.
  */
-async function stripTrailingSlash(req: Request): Promise<Request> {
+async function fixRequest(req: NextRequest): Promise<Request> {
   const url = new URL(req.url);
   if (url.pathname.length > 1 && url.pathname.endsWith("/")) {
     url.pathname = url.pathname.slice(0, -1);
-    // Clone the request properly to preserve headers and body
-    const body = req.method !== "GET" && req.method !== "HEAD"
-      ? await req.arrayBuffer()
-      : undefined;
-    return new Request(url.toString(), {
-      method: req.method,
-      headers: req.headers,
-      body: body,
-    });
   }
-  return req;
+
+  // Always create a clean Request for Better Auth
+  const headers = new Headers(req.headers);
+  const body = req.method !== "GET" && req.method !== "HEAD"
+    ? await req.text()
+    : undefined;
+
+  return new Request(url.toString(), {
+    method: req.method,
+    headers,
+    body,
+  });
 }
 
-export async function GET(req: Request) {
+function errorResponse(error: any, context: string) {
+  const message = error?.message || String(error) || "Unknown error";
+  console.error(`[Better Auth ${context}]`, message);
+  return NextResponse.json(
+    { error: "Auth service error", detail: message },
+    { status: 500 }
+  );
+}
+
+export async function GET(req: NextRequest) {
   try {
-    const fixedReq = await stripTrailingSlash(req);
-    return await handler.GET(fixedReq);
+    const handler = await getHandler();
+    const fixedReq = await fixRequest(req);
+    const response = await handler.GET(fixedReq);
+    return response;
   } catch (error: any) {
-    console.error("[Better Auth GET] Error:", error?.message || error);
-    return new Response(
-      JSON.stringify({ error: "Auth service error", detail: error?.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return errorResponse(error, "GET");
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const fixedReq = await stripTrailingSlash(req);
-    return await handler.POST(fixedReq);
+    const handler = await getHandler();
+    const fixedReq = await fixRequest(req);
+    const response = await handler.POST(fixedReq);
+    return response;
   } catch (error: any) {
-    console.error("[Better Auth POST] Error:", error?.message || error);
-    return new Response(
-      JSON.stringify({ error: "Auth service error", detail: error?.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return errorResponse(error, "POST");
   }
 }
