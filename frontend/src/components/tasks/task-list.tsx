@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Task } from '@/types/task';
+import TaskAuditLog from './task-audit-log';
 
 interface TaskListProps {
   tasks: Task[];
@@ -19,6 +20,7 @@ const PRIORITY_COLORS: Record<string, string> = {
 
 export default function TaskList({ tasks, onToggleCompletion, onDeleteTask, onEditTask }: TaskListProps) {
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
+  const [auditTaskId, setAuditTaskId] = useState<string | null>(null);
 
   if (!tasks || tasks.length === 0) {
     return (
@@ -69,6 +71,13 @@ export default function TaskList({ tasks, onToggleCompletion, onDeleteTask, onEd
             </div>
             <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
               <button
+                onClick={() => setAuditTaskId(task.id)}
+                className="text-gray-500 hover:text-gray-700 text-sm"
+                title="View history"
+              >
+                History
+              </button>
+              <button
                 onClick={() => onEditTask && onEditTask(task)}
                 className="text-blue-600 hover:text-blue-900 text-sm"
               >
@@ -118,6 +127,11 @@ export default function TaskList({ tasks, onToggleCompletion, onDeleteTask, onEd
           </div>
         </li>
       ))}
+
+      {/* Audit Log Modal */}
+      {auditTaskId && (
+        <TaskAuditLog taskId={auditTaskId} onClose={() => setAuditTaskId(null)} />
+      )}
     </ul>
   );
 }

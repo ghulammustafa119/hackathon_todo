@@ -129,6 +129,13 @@ class ApiService {
     });
   }
 
+  // --- Audit Log ---
+
+  async getTaskEvents(taskId: string): Promise<any[]> {
+    const userId = await this.requireUserId();
+    return this.makeRequest<any[]>(`/${userId}/tasks/${taskId}/events`);
+  }
+
   // --- Notifications ---
 
   async getNotifications(): Promise<any[]> {
