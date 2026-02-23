@@ -151,6 +151,32 @@ def read_root():
 def health_check():
     return {"status": "healthy", "service": "backend"}
 
+@app.post("/debug/verify-jwt")
+def debug_verify_jwt(body: dict):
+    """Test JWT verification with detailed error output."""
+    token = body.get("token", "")
+    from src.api.deps import _fetch_jwks
+    import jwt as pyjwt
+    from jwt import PyJWK
+
+    results = []
+    keys = _fetch_jwks()
+
+    for i, key_data in enumerate(keys):
+        try:
+            jwk = PyJWK(key_data)
+            payload = pyjwt.decode(
+                token,
+                jwk.key,
+                algorithms=["EdDSA"],
+                options={"verify_exp": True, "verify_aud": False},
+            )
+            results.append({"key_index": i, "success": True, "payload_sub": payload.get("sub")})
+        except Exception as e:
+            results.append({"key_index": i, "success": False, "error": str(e), "error_type": type(e).__name__})
+
+    return {"keys_count": len(keys), "results": results}
+
 @app.get("/debug/jwks")
 def debug_jwks():
     """Check JWKS configuration and connectivity."""
