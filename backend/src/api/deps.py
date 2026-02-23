@@ -76,7 +76,7 @@ def _verify_with_jwks(token: str) -> dict | None:
                 token,
                 jwk.key,
                 algorithms=["EdDSA"],
-                options={"verify_exp": True},
+                options={"verify_exp": True, "verify_aud": False},
             )
             return payload
         except Exception as e:
