@@ -4,7 +4,6 @@ from typing import Dict, Any, Optional
 from mcp.server import FastMCP
 from mcp import Tool
 from pydantic import BaseModel, Field
-from jose import jwt
 from datetime import datetime
 from contextlib import contextmanager
 from sqlmodel import Session, select
@@ -67,7 +66,8 @@ def get_db_session():
 def verify_token(token: str) -> Dict[str, Any]:
     """
     Verify JWT token and return user info.
-    Uses the same SECRET_KEY and ALGORITHM as the auth module to avoid mismatches.
+    Delegates to the central verify_token in deps.py which supports
+    both Better Auth JWKS (EdDSA) and HS256 fallback.
 
     Args:
         token: JWT token to verify
@@ -75,29 +75,23 @@ def verify_token(token: str) -> Dict[str, Any]:
     Returns:
         User information dictionary
     """
+    # Handle case where token might be prefixed with "Bearer "
+    if token.startswith("Bearer "):
+        token = token[7:]
+
+    token = token.strip()
+
+    if not token:
+        raise ValueError("Token is empty")
+
     try:
-        # Import from deps to use the exact same key that signed the token
-        from ..api.deps import SECRET_KEY, ALGORITHM
-
-        # Handle case where token might be prefixed with "Bearer "
-        if token.startswith("Bearer "):
-            token = token[7:]
-
-        # Also handle case where token might have leading/trailing whitespace
-        token = token.strip()
-
-        # Verify the token is not empty
-        if not token:
-            raise ValueError("Token is empty")
-
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        return payload
-    except jwt.ExpiredSignatureError:
-        raise ValueError("Token has expired")
-    except jwt.JWTError as e:
-        raise ValueError(f"Invalid token: {str(e)}")
+        from ..api.deps import verify_token as deps_verify_token
+        return deps_verify_token(token)
     except Exception as e:
-        raise ValueError(f"Token validation error: {str(e)}")
+        # deps.verify_token raises HTTPException on failure;
+        # convert to ValueError for MCP tool error handling
+        detail = getattr(e, 'detail', str(e))
+        raise ValueError(f"Invalid token: {detail}")
 
 
 def _task_to_dict(task: Task) -> Dict[str, Any]:
