@@ -3,7 +3,8 @@ from typing import List, Optional
 from src.models.task import Task, TaskCreate, TaskUpdate
 from src.models.tag import Tag, TaskTag
 from src.models.event import TaskEvent, OutboxEvent
-from datetime import datetime, timezone
+from src.models.reminder import ReminderSchedule
+from datetime import datetime, timezone, timedelta
 import json
 import uuid
 import logging
@@ -15,6 +16,34 @@ logger = logging.getLogger("task-service")
 class TaskService:
     def __init__(self, session: Session):
         self.session = session
+
+    def _sync_reminder(self, task: Task):
+        """Create or update a ReminderSchedule when a task has a due_date."""
+        try:
+            # Remove existing reminder for this task
+            existing = self.session.exec(
+                select(ReminderSchedule).where(ReminderSchedule.task_id == task.id)
+            ).first()
+            if existing:
+                self.session.delete(existing)
+                self.session.commit()
+
+            if task.due_date and not task.completed:
+                lead_minutes = task.reminder_lead_time or 60
+                remind_at = task.due_date - timedelta(minutes=lead_minutes)
+                # Only schedule if remind_at is in the future
+                if remind_at > datetime.now():
+                    reminder = ReminderSchedule(
+                        task_id=task.id,
+                        user_id=task.user_id,
+                        remind_at=remind_at,
+                        status="sent",  # immediately available for bell
+                    )
+                    self.session.add(reminder)
+                    self.session.commit()
+                    logger.info(f"Reminder scheduled for task {task.id} at {remind_at}")
+        except Exception as e:
+            logger.warning(f"Failed to sync reminder for task {task.id}: {e}")
 
     def _emit_event(self, event_type: str, task: Task, previous_state: Optional[dict] = None):
         """Persist task event to database and outbox for reliable delivery."""
@@ -83,6 +112,9 @@ class TaskService:
             # Handle tags
             if task_data.tags:
                 self._set_task_tags(task.id, user_id, task_data.tags)
+
+            # Schedule reminder if due_date is set
+            self._sync_reminder(task)
 
             # Emit task.created event
             self._emit_event("task.created", task)
@@ -206,6 +238,9 @@ class TaskService:
             if task_data.tags is not None:
                 self._set_task_tags(task.id, user_id, task_data.tags)
 
+            # Update reminder schedule
+            self._sync_reminder(task)
+
             # Emit task.updated event
             self._emit_event("task.updated", task, previous_state)
 
@@ -223,6 +258,13 @@ class TaskService:
 
             # Emit task.deleted event before deleting
             self._emit_event("task.deleted", task)
+
+            # Remove reminder
+            existing_reminder = self.session.exec(
+                select(ReminderSchedule).where(ReminderSchedule.task_id == task_id)
+            ).first()
+            if existing_reminder:
+                self.session.delete(existing_reminder)
 
             # Remove tag associations
             tag_links = self.session.exec(
@@ -257,6 +299,9 @@ class TaskService:
             self.session.add(task)
             self.session.commit()
             self.session.refresh(task)
+
+            # Sync reminder (removes if completed, schedules if uncompleted with due_date)
+            self._sync_reminder(task)
 
             # Emit task.completed event
             self._emit_event("task.completed" if task.completed else "task.uncompleted", task)
