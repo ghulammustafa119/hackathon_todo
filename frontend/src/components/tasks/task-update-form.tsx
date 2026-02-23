@@ -30,7 +30,13 @@ export default function TaskUpdateForm({ task, onUpdateTask, onCancel }: TaskUpd
       setTags(task.tags || []);
       if (task.due_date) {
         const d = new Date(task.due_date);
-        setDueDate(d.toISOString().slice(0, 16));
+        // Convert to local time string for datetime-local input
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const hours = String(d.getHours()).padStart(2, '0');
+        const minutes = String(d.getMinutes()).padStart(2, '0');
+        setDueDate(`${year}-${month}-${day}T${hours}:${minutes}`);
       } else {
         setDueDate('');
       }
