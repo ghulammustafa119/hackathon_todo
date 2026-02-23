@@ -10,18 +10,27 @@ const handler = toNextJsHandler(auth);
  * Better Auth's internal router does NOT match paths with trailing slashes
  * (e.g. /api/auth/sign-up/email/ → 404, but /api/auth/sign-up/email → 200).
  */
-function stripTrailingSlash(req: Request): Request {
+async function stripTrailingSlash(req: Request): Promise<Request> {
   const url = new URL(req.url);
   if (url.pathname.length > 1 && url.pathname.endsWith("/")) {
     url.pathname = url.pathname.slice(0, -1);
-    return new Request(url.toString(), req);
+    // Clone the request properly to preserve headers and body
+    const body = req.method !== "GET" && req.method !== "HEAD"
+      ? await req.arrayBuffer()
+      : undefined;
+    return new Request(url.toString(), {
+      method: req.method,
+      headers: req.headers,
+      body: body,
+    });
   }
   return req;
 }
 
 export async function GET(req: Request) {
   try {
-    return await handler.GET(stripTrailingSlash(req));
+    const fixedReq = await stripTrailingSlash(req);
+    return await handler.GET(fixedReq);
   } catch (error: any) {
     console.error("[Better Auth GET] Error:", error?.message || error);
     return new Response(
@@ -33,7 +42,8 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    return await handler.POST(stripTrailingSlash(req));
+    const fixedReq = await stripTrailingSlash(req);
+    return await handler.POST(fixedReq);
   } catch (error: any) {
     console.error("[Better Auth POST] Error:", error?.message || error);
     return new Response(
