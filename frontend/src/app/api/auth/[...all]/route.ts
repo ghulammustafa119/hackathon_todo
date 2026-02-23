@@ -5,16 +5,32 @@ import { NextRequest, NextResponse } from "next/server";
 
 const { GET: _GET, POST: _POST } = toNextJsHandler(auth);
 
+/**
+ * Fix the request URL: strip trailing slash that Next.js adds
+ * because of trailingSlash: true in next.config.js.
+ * Better Auth's router doesn't recognize paths with trailing slashes.
+ *
+ * We create a standard Request (not NextRequest) to avoid any
+ * framework-specific URL handling issues.
+ */
+function fixUrl(req: Request): string {
+  const url = new URL(req.url);
+  if (url.pathname.endsWith("/") && url.pathname.length > 1) {
+    url.pathname = url.pathname.slice(0, -1);
+  }
+  return url.toString();
+}
+
 export async function GET(req: NextRequest) {
   try {
-    // Strip trailing slash by modifying the URL via nextUrl
-    if (req.nextUrl.pathname.endsWith("/") && req.nextUrl.pathname.length > 1) {
-      const url = req.nextUrl.clone();
-      url.pathname = url.pathname.slice(0, -1);
-      const newReq = new NextRequest(url, { headers: req.headers });
-      return await _GET(newReq);
-    }
-    return await _GET(req);
+    const fixedUrl = fixUrl(req);
+    // Use standard Request to avoid NextRequest URL quirks
+    const fixedReq = new Request(fixedUrl, {
+      method: "GET",
+      headers: req.headers,
+    });
+    const response = await auth.handler(fixedReq);
+    return response;
   } catch (error: any) {
     console.error("[Better Auth GET]", error);
     return NextResponse.json(
@@ -26,20 +42,16 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    // For POST, we need to clone with body preserved
-    if (req.nextUrl.pathname.endsWith("/") && req.nextUrl.pathname.length > 1) {
-      const url = req.nextUrl.clone();
-      url.pathname = url.pathname.slice(0, -1);
-      // Read body before creating new request
-      const bodyText = await req.text();
-      const newReq = new NextRequest(url, {
-        method: "POST",
-        headers: req.headers,
-        body: bodyText,
-      });
-      return await _POST(newReq);
-    }
-    return await _POST(req);
+    const fixedUrl = fixUrl(req);
+    const bodyText = await req.text();
+    // Use standard Request to avoid NextRequest URL quirks
+    const fixedReq = new Request(fixedUrl, {
+      method: "POST",
+      headers: req.headers,
+      body: bodyText,
+    });
+    const response = await auth.handler(fixedReq);
+    return response;
   } catch (error: any) {
     console.error("[Better Auth POST]", error);
     return NextResponse.json(
