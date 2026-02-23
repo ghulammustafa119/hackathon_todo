@@ -19,7 +19,7 @@ if (!process.env.BETTER_AUTH_SECRET) {
   );
 }
 
-export const auth = betterAuth({
+export const authOptions = {
   database: new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : undefined,
@@ -42,4 +42,6 @@ export const auth = betterAuth({
   },
   secret: process.env.BETTER_AUTH_SECRET,
   baseURL: process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_BETTER_AUTH_URL || "http://localhost:3000",
-});
+};
+
+export const auth = betterAuth(authOptions);
