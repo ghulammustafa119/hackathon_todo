@@ -53,7 +53,7 @@ export default function TaskForm({ onTaskCreated, onCancel }: TaskFormProps) {
         priority,
         ...(description && { description }),
         ...(tags.length > 0 && { tags }),
-        ...(dueDate && { due_date: new Date(dueDate).toISOString() }),
+        ...(dueDate && { due_date: dueDate + ':00' }),
         ...(recurrence && { recurrence_rule: recurrence }),
       };
 

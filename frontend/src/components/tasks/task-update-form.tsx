@@ -73,7 +73,7 @@ export default function TaskUpdateForm({ task, onUpdateTask, onCancel }: TaskUpd
         priority,
         tags,
         ...(description ? { description } : { description: '' }),
-        ...(dueDate ? { due_date: new Date(dueDate).toISOString() } : {}),
+        ...(dueDate ? { due_date: dueDate + ':00' } : {}),
       };
 
       await onUpdateTask(task.id, updatedTask);
