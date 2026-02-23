@@ -151,6 +151,22 @@ def read_root():
 def health_check():
     return {"status": "healthy", "service": "backend"}
 
+@app.get("/debug/jwks")
+def debug_jwks():
+    """Check JWKS configuration and connectivity."""
+    from src.api.deps import JWKS_URL, _fetch_jwks
+    try:
+        keys = _fetch_jwks()
+        return {
+            "jwks_url": JWKS_URL,
+            "keys_count": len(keys),
+            "key_algs": [k.get("alg") for k in keys],
+            "pyjwt_version": __import__("jwt").__version__,
+            "cryptography_available": bool(__import__("importlib").util.find_spec("cryptography")),
+        }
+    except Exception as e:
+        return {"error": str(e), "jwks_url": JWKS_URL}
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PORT", 8000))

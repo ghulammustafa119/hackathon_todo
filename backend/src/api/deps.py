@@ -26,7 +26,7 @@ ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 
 # Better Auth JWKS endpoint for EdDSA verification
 BETTER_AUTH_URL = os.getenv("BETTER_AUTH_URL", os.getenv("FRONTEND_URL", "https://hackathon-todo-beryl.vercel.app"))
-JWKS_URL = f"{BETTER_AUTH_URL}/api/auth/jwks" if BETTER_AUTH_URL else ""
+JWKS_URL = f"{BETTER_AUTH_URL}/api/auth/jwks/" if BETTER_AUTH_URL else ""
 
 # Cache JWKS keys (refresh every 1 hour)
 _jwks_cache: dict = {"keys": [], "fetched_at": 0}
