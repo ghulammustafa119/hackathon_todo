@@ -163,9 +163,9 @@ Goal: Complete integration, testing, and final polish
 - [X] T067 Verify stateless architecture by confirming no server-side session storage is used
 - [X] T068 Test application restart resilience by verifying data persistence remains intact
 - [X] T069 Confirm JWT-based authentication works without server-side session state
-- [ ] T070 Test authentication operation response times (should be < 2 seconds) - linked to SC-010 (acceptable response times) and SC-004 (uptime/availability)
-- [ ] T071 Test task management operations response times (should be < 1 second) - linked to SC-010 (acceptable response times) and SC-007 (performance degradation)
-- [ ] T072 Verify system performance under load with multiple concurrent users - linked to SC-004 (uptime during business hours) and SC-007 (handle task collections)
+- [X] T070 Test authentication operation response times (should be < 2 seconds) - linked to SC-010 (acceptable response times) and SC-004 (uptime/availability)
+- [X] T071 Test task management operations response times (should be < 1 second) - linked to SC-010 (acceptable response times) and SC-007 (performance degradation)
+- [X] T072 Verify system performance under load with multiple concurrent users - linked to SC-004 (uptime during business hours) and SC-007 (handle task collections)
 
 ## Stateless Architecture Validation (Phase III)
 

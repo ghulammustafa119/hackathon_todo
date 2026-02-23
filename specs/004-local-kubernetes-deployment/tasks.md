@@ -59,8 +59,8 @@
   - `frontend` service: build from `./frontend`, ports 3000:3000, depends_on backend, environment NEXT_PUBLIC_API_URL pointing to backend
   - Shared network for inter-service communication
 
-- [ ] T010 [US1] Test: Build both images with `docker-compose build` and verify build succeeds
-- [ ] T011 [US1] Test: Run `docker-compose up` and verify:
+- [X] T010 [US1] Test: Build both images with `docker-compose build` and verify build succeeds
+- [X] T011 [US1] Test: Run `docker-compose up` and verify:
   - Backend health check passes at `http://localhost:8000/health`
   - Frontend loads at `http://localhost:3000`
   - Login, task CRUD, and AI chatbot work end-to-end
@@ -153,8 +153,8 @@
 
 - [x] T023 [US2] Create `helm/todo-app/.helmignore` excluding: `.git/`, `*.swp`, `*.bak`, `*.tmp`
 
-- [ ] T024 [US2] Test: Run `helm lint ./helm/todo-app` and verify no errors
-- [ ] T025 [US2] Test: Run `helm template todo-app ./helm/todo-app` and verify all manifests render correctly
+- [X] T024 [US2] Test: Run `helm lint ./helm/todo-app` and verify no errors
+- [X] T025 [US2] Test: Run `helm template todo-app ./helm/todo-app` and verify all manifests render correctly
 
 **Checkpoint**: Helm charts are complete and pass linting/template validation
 
@@ -168,11 +168,11 @@
 
 ### Implementation for User Story 3
 
-- [ ] T026 [US3] Start Minikube cluster: `minikube start --driver=docker --cpus=2 --memory=4096`
+- [X] T026 [US3] Start Minikube cluster: `minikube start --driver=docker --cpus=2 --memory=4096`
 
-- [ ] T027 [US3] Configure Docker to use Minikube's Docker daemon: `eval $(minikube docker-env)` then rebuild images inside Minikube context
+- [X] T027 [US3] Configure Docker to use Minikube's Docker daemon: `eval $(minikube docker-env)` then rebuild images inside Minikube context
 
-- [ ] T028 [US3] Create Kubernetes namespace: `kubectl create namespace todo-app`
+- [X] T028 [US3] Create Kubernetes namespace: `kubectl create namespace todo-app`
 
 - [x] T029 [US3] Create a `helm/todo-app/values-minikube.yaml.example` override file with:
   - Actual Neon PostgreSQL DATABASE_URL
@@ -181,20 +181,20 @@
   - `imagePullPolicy: Never` (using local images)
   - NEXT_PUBLIC_API_URL set to backend service ClusterIP URL
 
-- [ ] T030 [US3] Deploy with Helm: `helm install todo-app ./helm/todo-app -n todo-app -f helm/todo-app/values-minikube.yaml`
+- [X] T030 [US3] Deploy with Helm: `helm install todo-app ./helm/todo-app -n todo-app -f helm/todo-app/values-minikube.yaml`
 
-- [ ] T031 [US3] Verify deployment: `kubectl get pods -n todo-app` - all pods in Running state
+- [X] T031 [US3] Verify deployment: `kubectl get pods -n todo-app` - all pods in Running state
 
-- [ ] T032 [US3] Expose frontend: `minikube service todo-app-frontend -n todo-app` and verify application loads in browser
+- [X] T032 [US3] Expose frontend: `minikube service todo-app-frontend -n todo-app` and verify application loads in browser
 
-- [ ] T033 [US3] Test end-to-end:
+- [X] T033 [US3] Test end-to-end:
   - Login with existing credentials
   - Create a task via the UI
   - Use AI chatbot: "show my tasks"
   - Delete a task
   - Verify all operations succeed
 
-- [ ] T034 [US3] Test resilience: Delete a backend pod with `kubectl delete pod` and verify it restarts automatically and recovers
+- [X] T034 [US3] Test resilience: Delete a backend pod with `kubectl delete pod` and verify it restarts automatically and recovers
 
 **Checkpoint**: Full application is running on Minikube with all features functional
 
@@ -218,12 +218,12 @@
   - Configuration
   - Example commands for cluster health analysis
 
-- [ ] T037 [US4] Test kubectl-ai commands:
+- [X] T037 [US4] Test kubectl-ai commands:
   - `kubectl-ai "show all pods in todo-app namespace"`
   - `kubectl-ai "describe the backend deployment"`
   - `kubectl-ai "scale backend to 2 replicas"`
 
-- [ ] T038 [US4] Test kagent commands:
+- [X] T038 [US4] Test kagent commands:
   - `kagent "analyze cluster health"`
   - `kagent "check resource usage of todo-app"`
 
@@ -247,7 +247,7 @@
   - Minikube deployment steps
   - Link to detailed k8s-setup.md
 
-- [ ] T041 Perform full deployment validation:
+- [X] T041 Perform full deployment validation:
   - Clean Minikube start
   - Build images
   - Helm install
