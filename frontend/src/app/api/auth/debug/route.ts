@@ -41,8 +41,32 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: signupResult });
   } catch (error: any) {
+    // Also check the database schema
+    let schema: any = null;
+    try {
+      const { Pool } = await import("pg");
+      const pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: false },
+      });
+      const res = await pool.query(`
+        SELECT column_name, data_type, is_nullable
+        FROM information_schema.columns
+        WHERE table_name = 'user'
+        ORDER BY ordinal_position
+      `);
+      schema = res.rows;
+      await pool.end();
+    } catch {}
+
     return NextResponse.json(
-      { success: false, error: String(error?.message || error), stack: error?.stack?.split("\n").slice(0, 5) },
+      {
+        success: false,
+        error: String(error?.message || error),
+        cause: error?.cause ? String(error.cause) : undefined,
+        stack: error?.stack?.split("\n").slice(0, 8),
+        user_table_schema: schema,
+      },
       { status: 500 }
     );
   }
